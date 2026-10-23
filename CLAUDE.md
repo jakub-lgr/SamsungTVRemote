@@ -48,7 +48,7 @@ Build má být bez chyb i bez varování.
 ## Testování
 
 - `Tools/faketv.py` napodobí televizi na `127.0.0.1:8002`. Aplikaci na ni nasměruješ spouštěcím
-  argumentem `-tv.host 127.0.0.1`, který uložené nastavení nepřepíše.
+  argumentem `-tv.testHost 127.0.0.1`, který uložené nastavení nepřepíše.
 - Simulátor používá síť Macu, takže dosáhne i na skutečnou televizi v síti.
 - Úprava plistu s nastavením přímo na disku se kvůli mezipaměti `cfprefsd` neprojeví spolehlivě.
   Používej spouštěcí argumenty nebo UI aplikace.

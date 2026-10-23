@@ -8,10 +8,10 @@ Napodobuje WebSocket API Tizenu na portu 8002 (TLS, párování tokenem):
 
 Použití:
     python3 Tools/faketv.py
-    xcrun simctl launch booted cz.jakublanger.SamsungTVRemote -tv.host 127.0.0.1
+    xcrun simctl launch booted cz.jakublanger.SamsungTVRemote -tv.testHost 127.0.0.1
 
-Spouštěcí argument `-tv.host` přepíše IP televize jen pro toto spuštění, uložené nastavení
-zůstane beze změny. Hlasitost (UPnP, port 9197) falešná TV neumí.
+Spouštěcí argument `-tv.testHost` přesměruje aplikaci jen pro toto spuštění, uložené nastavení
+zůstane beze změny (v aplikaci ale musí být uložená aspoň jedna televize). Hlasitost (UPnP, port 9197) falešná TV neumí.
 """
 
 import base64

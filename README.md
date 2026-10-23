@@ -89,7 +89,7 @@ Design/AppIcon/                # skripty pro Blender, ze kterých je vyrenderova
 
 ```bash
 python3 Tools/faketv.py
-xcrun simctl launch booted cz.jakublanger.SamsungTVRemote -tv.host 127.0.0.1
+xcrun simctl launch booted cz.jakublanger.SamsungTVRemote -tv.testHost 127.0.0.1
 ```
 
 Simulátor používá síť Macu, takže když je Mac ve stejné Wi-Fi jako televize, jde aplikaci zkoušet

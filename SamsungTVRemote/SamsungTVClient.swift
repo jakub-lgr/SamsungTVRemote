@@ -29,6 +29,8 @@ final class SamsungTVClient {
 
     private(set) var state: State = .disconnected
     private(set) var isWaking = false
+    /// Spojení spadlo a aplikace ho sama potichu obnovuje. UI místo chyby ukáže jen „Obnovuji spojení…“.
+    private(set) var isReconnecting = false
     /// Poslední známá hlasitost televize (0–100), `nil` dokud ji neznáme.
     private(set) var volume: Int?
     private(set) var isMuted: Bool?
@@ -51,6 +53,8 @@ final class SamsungTVClient {
     private var receiveTask: Task<Void, Never>?
     private var timeoutTask: Task<Void, Never>?
     private var wakeTask: Task<Void, Never>?
+    private var reconnectTask: Task<Void, Never>?
+    private var pingTask: Task<Void, Never>?
     private var lastSend: Task<Void, Never>?
     private var volumeRefreshTask: Task<Void, Never>?
     /// Zprávy odeslané během navazování spojení. Odešlou se, jakmile je spojení hotové.
@@ -188,6 +192,7 @@ final class SamsungTVClient {
         wakeTask?.cancel()
         wakeTask = nil
         isWaking = false
+        stopReconnecting()
         teardown()
         pending.removeAll()
         isTVKeyboardActive = false
@@ -220,6 +225,8 @@ final class SamsungTVClient {
     private func teardown() {
         timeoutTask?.cancel()
         timeoutTask = nil
+        pingTask?.cancel()
+        pingTask = nil
         lastSend = nil
         receiveTask?.cancel()
         receiveTask = nil
@@ -231,7 +238,8 @@ final class SamsungTVClient {
 
     private func fail(_ message: String) {
         teardown()
-        pending.removeAll()
+        // Během obnovy spojení necháme stisknuté klávesy čekat, odejdou po úspěšném připojení.
+        if !isReconnecting { pending.removeAll() }
         isTVKeyboardActive = false
         state = .failed(message)
     }
@@ -245,8 +253,69 @@ final class SamsungTVClient {
             }
         } catch {
             guard task === self.task else { return }
-            fail(Self.describe(error))
+            if state == .connected {
+                connectionLost()
+            } else {
+                fail(Self.describe(error))
+            }
         }
+    }
+
+    // MARK: - Obnova spojení
+
+    /// Navázané spojení spadlo (televize ho zavřela, Wi-Fi na chvíli vypadla…).
+    /// Zkusíme ho potichu obnovit s rostoucími prodlevami a chybu ukážeme, až když se to nepovede.
+    private func connectionLost() {
+        guard !isReconnecting else { return }
+        teardown()
+        isTVKeyboardActive = false
+        isReconnecting = true
+        state = .connecting
+        reconnectTask = Task {
+            for delay in [0.3, 1, 2, 4, 8] {
+                try? await Task.sleep(for: .seconds(delay))
+                guard !Task.isCancelled else { return }
+                if state != .connected { connect() }
+                while state == .connecting || state == .waitingForApproval {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    guard !Task.isCancelled else { return }
+                }
+                if state == .connected {
+                    isReconnecting = false
+                    return
+                }
+            }
+            isReconnecting = false
+            pending.removeAll()
+            state = .failed("Spojení s televizí se ztratilo. Je zapnutá a ve stejné Wi-Fi?")
+        }
+    }
+
+    private func stopReconnecting() {
+        reconnectTask?.cancel()
+        reconnectTask = nil
+        isReconnecting = false
+    }
+
+    /// Pravidelný ping drží spojení při životě a odhalí výpadek dřív než další stisk klávesy.
+    private func startPinging(_ task: URLSessionWebSocketTask) {
+        pingTask?.cancel()
+        let taskID = ObjectIdentifier(task)
+        pingTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(20))
+                guard !Task.isCancelled, task === self.task else { return }
+                task.sendPing { error in
+                    guard error != nil else { return }
+                    Task { @MainActor in SamsungTVClient.shared.pingFailed(taskID) }
+                }
+            }
+        }
+    }
+
+    private func pingFailed(_ taskID: ObjectIdentifier) {
+        guard let task, ObjectIdentifier(task) == taskID, state == .connected else { return }
+        connectionLost()
     }
 
     private func handle(_ message: URLSessionWebSocketTask.Message) {
@@ -266,6 +335,7 @@ final class SamsungTVClient {
             }
             timeoutTask?.cancel()
             state = .connected
+            if let task { startPinging(task) }
             refreshVolume()
             let messages = pending
             pending.removeAll()
@@ -319,9 +389,9 @@ final class SamsungTVClient {
                 try await task.send(.string(text))
             } catch {
                 guard task === self.task else { return }
-                // Spojení mezitím spadlo (třeba po uspání telefonu): připoj se znovu a zprávu pošli potom.
-                pending = [text]
-                connect()
+                // Spojení mezitím spadlo (třeba po uspání telefonu): obnov ho a zprávu pošli potom.
+                pending.append(text)
+                if state == .connected { connectionLost() } else { connect() }
             }
         }
     }

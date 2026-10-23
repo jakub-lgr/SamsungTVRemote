@@ -252,7 +252,7 @@ private struct TVSwitcher: View {
     }
 
     private var canRetry: Bool {
-        guard !client.isWaking else { return false }
+        guard !client.isWaking && !client.isReconnecting else { return false }
         switch client.state {
         case .disconnected, .failed: return true
         case .connecting, .waitingForApproval, .connected: return false
@@ -262,6 +262,7 @@ private struct TVSwitcher: View {
     /// Stav pod názvem televize. Když je vše v pořádku, nepíšeme nic, stačí zelená tečka.
     private var status: String? {
         if client.isWaking && client.state != .connected { return "Zapínám televizi…" }
+        if client.isReconnecting { return "Obnovuji spojení…" }
         switch client.state {
         case .disconnected: return "Odpojeno"
         case .connecting: return "Připojuji…"
@@ -272,7 +273,7 @@ private struct TVSwitcher: View {
     }
 
     private var color: Color {
-        if client.isWaking && client.state != .connected { return .orange }
+        if (client.isWaking || client.isReconnecting) && client.state != .connected { return .orange }
         switch client.state {
         case .connected: return .green
         case .connecting, .waitingForApproval: return .orange

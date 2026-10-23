@@ -20,6 +20,9 @@ nonisolated enum TVConfig {
     static let savedTVsKey = "tv.saved"
     static let currentTVKey = "tv.current"
     static let hardwareVolumeKey = "tv.hardwareVolume"
+    /// Spouštěcí argument `-tv.testHost <ip>` dočasně přesměruje aplikaci jinam, třeba na `Tools/faketv.py`.
+    /// Do uloženého nastavení se nezapisuje.
+    static let testHostKey = "tv.testHost"
 
     // MARK: - Seznam televizí
 
@@ -51,7 +54,7 @@ nonisolated enum TVConfig {
 
     // MARK: - Aktuální televize
 
-    static var host: String { currentTV?.host ?? "" }
+    static var host: String { UserDefaults.standard.string(forKey: testHostKey) ?? currentTV?.host ?? "" }
     static var mac: String { currentTV?.mac ?? "" }
 
     /// Token, který televize vydá po potvrzení připojení. Bez něj se ptá znovu.
