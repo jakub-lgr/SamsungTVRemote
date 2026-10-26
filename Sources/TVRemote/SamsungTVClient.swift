@@ -403,20 +403,33 @@ final class SamsungTVClient {
 
     // MARK: - Klávesy
 
-    func send(_ key: TVKey) {
-        if key == .volumeUp || key == .volumeDown || key == .mute {
+    /// `Click` je obyčejné klepnutí. `Press` a `Release` drží klávesu jako fyzický ovladač,
+    /// televize podle délky podržení rozlišuje dlouhý stisk (třeba OK otevře informace o pořadu).
+    enum KeyCommand: String {
+        case click = "Click"
+        case press = "Press"
+        case release = "Release"
+    }
+
+    func send(_ key: TVKey, _ command: KeyCommand = .click) {
+        if command != .press && (key == .volumeUp || key == .volumeDown || key == .mute) {
             // Televize hlasitost změní až chvíli po klávese, stav proto načteme se zpožděním.
             refreshVolume(after: .milliseconds(500))
         }
         emit([
             "method": "ms.remote.control",
             "params": [
-                "Cmd": "Click",
+                "Cmd": command.rawValue,
                 "DataOfCmd": key.rawValue,
                 "Option": "false",
                 "TypeOfRemote": "SendRemoteKey",
             ],
         ])
+    }
+
+    /// Začátek (`true`) nebo konec (`false`) podržení klávesy.
+    func hold(_ key: TVKey, _ isDown: Bool) {
+        send(key, isDown ? .press : .release)
     }
 
     /// Vypínač: zapnutou televizi vypne klávesou, nedostupnou zkusí probudit přes Wake-on-LAN.

@@ -14,13 +14,11 @@ struct NumberPadSheet: View {
 
             LazyVGrid(columns: columns, spacing: 16) {
                 ForEach(1...9, id: \.self) { digit in
-                    key(Text("\(digit)").font(.title.weight(.semibold)), label: "\(digit)") { tv.send(.digit(digit)) }
+                    key(Text("\(digit)").font(.title.weight(.semibold)), label: "\(digit)", key: .digit(digit))
                 }
-                key(Image(systemName: "arrow.uturn.left").font(.title3.weight(.semibold)), label: "Předchozí kanál") {
-                    tv.send(.previousChannel)
-                }
-                key(Text("0").font(.title.weight(.semibold)), label: "0") { tv.send(.digit(0)) }
-                key(Text("OK").font(.title3.weight(.bold)), label: "Potvrdit") { tv.send(.enter) }
+                key(Image(systemName: "arrow.uturn.left").font(.title3.weight(.semibold)), label: "Předchozí kanál", key: .previousChannel)
+                key(Text("0").font(.title.weight(.semibold)), label: "0", key: .digit(0))
+                key(Text("OK").font(.title3.weight(.bold)), label: "Potvrdit", key: .enter)
             }
         }
         .padding(24)
@@ -28,8 +26,8 @@ struct NumberPadSheet: View {
         .presentationDragIndicator(.visible)
     }
 
-    private func key(_ content: some View, label: String, action: @escaping () -> Void) -> some View {
-        RemoteKeyButton(action: action) {
+    private func key(_ content: some View, label: String, key: TVKey) -> some View {
+        RemoteKeyButton(action: { tv.send(key) }, hold: { tv.hold(key, $0) }) {
             content.frame(width: 84, height: 70)
         }
         .accessibilityLabel(label)

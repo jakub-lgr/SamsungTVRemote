@@ -23,12 +23,16 @@ struct ContentView: View {
                 }
                 Spacer(minLength: 12)
                 // Na menších iPhonech se ovladač zmenší, aby se vešlo všechno ostatní.
-                DirectionPad(size: min(260, max(190, proxy.size.height - 522))) { tv.send($0) }
+                DirectionPad(
+                    size: min(260, max(190, proxy.size.height - 522)),
+                    onPress: { tv.send($0) },
+                    onHold: { tv.hold($0, $1) }
+                )
                 Spacer(minLength: 12)
                 HStack(spacing: 28) {
-                    RemoteKey(systemImage: "arrow.uturn.backward", title: "Zpět") { tv.send(.back) }
-                    RemoteKey(systemImage: "house.fill", title: "Domů") { tv.send(.home) }
-                    RemoteKey(systemImage: "rectangle.portrait.and.arrow.right", title: "Zdroj") { tv.send(.source) }
+                    RemoteKey(systemImage: "arrow.uturn.backward", title: "Zpět", action: { tv.send(.back) }, hold: { tv.hold(.back, $0) })
+                    RemoteKey(systemImage: "house.fill", title: "Domů", action: { tv.send(.home) }, hold: { tv.hold(.home, $0) })
+                    RemoteKey(systemImage: "rectangle.portrait.and.arrow.right", title: "Zdroj", action: { tv.send(.source) }, hold: { tv.hold(.source, $0) })
                 }
                 Spacer(minLength: 12)
                 HStack(alignment: .center) {
@@ -39,15 +43,17 @@ struct ContentView: View {
                         RemoteKey(
                             systemImage: tv.isMuted == true ? "speaker.slash.fill" : "speaker.slash",
                             title: tv.isMuted == true ? "Ztlumeno" : "Ztlumit",
-                            fill: tv.isMuted == true ? .red.opacity(0.85) : Color(white: 0.2)
-                        ) { tv.send(.mute) }
+                            fill: tv.isMuted == true ? .red.opacity(0.85) : Color(white: 0.2),
+                            action: { tv.send(.mute) },
+                            hold: { tv.hold(.mute, $0) }
+                        )
                     }
                     Spacer()
                     Rocker(title: "CH", upImage: "chevron.up", downImage: "chevron.down") { tv.send($0 ? .channelUp : .channelDown) }
                 }
                 .padding(.horizontal, 12)
                 Spacer(minLength: 12)
-                ColorKeys { tv.send($0) }
+                ColorKeys(onPress: { tv.send($0) }, onHold: { tv.hold($0, $1) })
                     .padding(.bottom, 12)
                 bottomBar
             }
