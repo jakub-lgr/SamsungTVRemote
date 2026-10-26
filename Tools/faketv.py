@@ -8,7 +8,9 @@ Napodobuje WebSocket API Tizenu na portu 8002 (TLS, párování tokenem):
 
 Použití:
     python3 Tools/faketv.py
-    xcrun simctl launch booted cz.jakublanger.MyApps -tv.testHost 127.0.0.1
+    xcrun simctl launch booted cz.jakublanger.SamsungTVRemote -tv.testHost 127.0.0.1
+
+U aplikace, která balíček vkládá, použij její bundle ID.
 
 Spouštěcí argument `-tv.testHost` přesměruje aplikaci jen pro toto spuštění, uložené nastavení
 zůstane beze změny (v aplikaci ale musí být uložená aspoň jedna televize). Hlasitost (UPnP, port 9197) falešná TV neumí.
