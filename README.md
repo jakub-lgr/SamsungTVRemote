@@ -15,6 +15,7 @@ Bez cloudu, bez účtu Samsung a bez SmartThings. Telefon mluví s televizí př
 - **Hlasitost bočními tlačítky iPhonu,** dokud je aplikace otevřená.
 - **Psaní z klávesnice telefonu** do hledání v YouTube, Netflixu a dalších. Panel se otevře sám, jakmile televize ukáže klávesnici.
 - **Aplikace z televize:** seznam nainstalovaných aplikací, spuštění jedním klepnutím, oblíbené připnuté přímo na ovladači.
+- **Barevná tlačítka** (červené, zelené, žluté, modré) pro teletext, HbbTV a nabídky aplikací.
 - **Číselník** pro přímou volbu kanálu.
 - **Zapnutí televize** přes Wake-on-LAN.
 - **Více televizí:** hledání v síti, každá televize má vlastní párování a oblíbené aplikace, přepínání jedním klepnutím.
