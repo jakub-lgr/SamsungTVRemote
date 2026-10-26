@@ -1,15 +1,15 @@
 import Foundation
 
-/// Přesná hlasitost a ztlumení přes UPnP službu RenderingControl (port 9197).
+/// Exact volume and mute via the UPnP RenderingControl service (port 9197).
 ///
-/// WebSocket API umí jen klávesy VOL+/VOL−, číslo hlasitosti jde nastavit a přečíst jen tudy.
-/// Rozsah je 0–100.
+/// The WebSocket API only has VOL+/VOL− keys; the volume number can only be set and read this way.
+/// The range is 0–100.
 nonisolated struct TVVolume {
     enum Failure: LocalizedError {
         case unexpectedResponse
 
         var errorDescription: String? {
-            "Televize na požadavek o hlasitost neodpověděla podle očekávání."
+            "The TV didn't answer the volume request as expected."
         }
     }
 

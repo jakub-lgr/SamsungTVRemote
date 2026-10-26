@@ -5,10 +5,10 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(TVConfig.hardwareVolumeKey) private var hardwareVolume = true
     @State private var discovery = TVDiscovery()
-    /// Televize otevřená k úpravě, nebo nová (prázdná) při ručním přidání.
+    /// TV open for editing, or a new (empty) one when adding manually.
     @State private var editing: SavedTV?
 
-    /// Nalezené televize, které ještě nejsou uložené.
+    /// TVs found on the network that aren't saved yet.
     private var newTelevisions: [DiscoveredTV] {
         discovery.televisions.filter { found in
             !tv.savedTVs.contains { $0.id == found.id || $0.host == found.host }
@@ -22,18 +22,18 @@ struct SettingsView: View {
                 discoveredSection
 
                 Section {
-                    Toggle("Hlasitost bočními tlačítky", isOn: $hardwareVolume)
+                    Toggle("Volume with Side Buttons", isOn: $hardwareVolume)
                 } header: {
-                    Text("Ovládání")
+                    Text("Controls")
                 } footer: {
-                    Text("Když je aplikace otevřená, boční tlačítka iPhonu mění hlasitost televize místo telefonu.")
+                    Text("While the app is open, the iPhone's side buttons change the TV's volume instead of the phone's.")
                 }
             }
-            .navigationTitle("Televize")
+            .navigationTitle("TVs")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Hotovo") { dismiss() }
+                    Button("Done") { dismiss() }
                         .disabled(tv.currentTV == nil)
                 }
             }
@@ -46,7 +46,7 @@ struct SettingsView: View {
         .interactiveDismissDisabled(tv.currentTV == nil)
     }
 
-    // MARK: - Moje televize
+    // MARK: - My TVs
 
     @ViewBuilder
     private var savedSection: some View {
@@ -58,37 +58,37 @@ struct SettingsView: View {
                     } label: {
                         TVRow(
                             name: saved.name,
-                            detail: [saved.host, saved.token == nil ? "nespárováno" : nil].compactMap { $0 }.joined(separator: " · "),
+                            detail: [saved.host, saved.token == nil ? "not paired" : nil].compactMap { $0 }.joined(separator: " · "),
                             isCurrent: saved.id == tv.currentTVID
                         )
                     }
                     .buttonStyle(.plain)
                     .swipeActions {
-                        Button("Smazat", role: .destructive) { tv.remove(saved.id) }
-                        Button("Upravit") { editing = saved }
+                        Button("Delete", role: .destructive) { tv.remove(saved.id) }
+                        Button("Edit") { editing = saved }
                             .tint(.gray)
                     }
                     .contextMenu {
-                        Button("Upravit", systemImage: "pencil") { editing = saved }
+                        Button("Edit", systemImage: "pencil") { editing = saved }
                         if saved.token != nil {
-                            Button("Zapomenout spárování", systemImage: "link") {
+                            Button("Forget Pairing", systemImage: "link") {
                                 var unpaired = saved
                                 unpaired.token = nil
                                 tv.save(unpaired, select: false)
                             }
                         }
-                        Button("Smazat", systemImage: "trash", role: .destructive) { tv.remove(saved.id) }
+                        Button("Delete", systemImage: "trash", role: .destructive) { tv.remove(saved.id) }
                     }
                 }
             } header: {
-                Text("Moje televize")
+                Text("My TVs")
             } footer: {
-                Text("Klepnutím televizi vybereš. Úpravy a mazání najdeš po přejetí doleva nebo podržení.")
+                Text("Tap a TV to select it. Swipe left or touch and hold to edit or delete.")
             }
         }
     }
 
-    // MARK: - Hledání v síti
+    // MARK: - Network discovery
 
     @ViewBuilder
     private var discoveredSection: some View {
@@ -99,7 +99,7 @@ struct SettingsView: View {
                 } label: {
                     TVRow(
                         name: found.name,
-                        detail: [found.model, found.host, found.isOn ? nil : "v pohotovosti"].compactMap { $0 }.joined(separator: " · "),
+                        detail: [found.model, found.host, found.isOn ? nil : "standby"].compactMap { $0 }.joined(separator: " · "),
                         isCurrent: false,
                         accessory: "plus.circle.fill"
                     )
@@ -111,7 +111,7 @@ struct SettingsView: View {
             case .searching where newTelevisions.isEmpty:
                 HStack(spacing: 10) {
                     ProgressView()
-                    Text(discovery.televisions.isEmpty ? "Hledám televize v síti…" : "Další televize zatím nevidím…")
+                    Text(discovery.televisions.isEmpty ? "Looking for TVs on the network…" : "No other TVs found yet…")
                         .foregroundStyle(.secondary)
                 }
             case .failed(let message):
@@ -120,24 +120,24 @@ struct SettingsView: View {
                 EmptyView()
             }
 
-            Button("Přidat ručně (IP a MAC)", systemImage: "keyboard") {
+            Button("Add Manually (IP and MAC)", systemImage: "keyboard") {
                 editing = SavedTV(id: UUID().uuidString, name: "", host: "", mac: "")
             }
         } header: {
             HStack {
-                Text("Přidat televizi")
+                Text("Add TV")
                 Spacer()
-                Button("Hledat znovu") { discovery.start() }
+                Button("Search Again") { discovery.start() }
                     .font(.footnote)
                     .textCase(nil)
             }
         } footer: {
-            Text("Televize se v síti ukáže, když je zapnutá nebo v pohotovosti a ve stejné Wi-Fi. Při prvním připojení na ní potvrď Povolit.")
+            Text("A TV shows up when it's on or in standby and on the same Wi-Fi. On the first connection, choose Allow on the TV.")
         }
     }
 }
 
-/// Řádek televize v seznamu.
+/// TV row in the list.
 private struct TVRow: View {
     let name: String
     let detail: String
@@ -171,9 +171,9 @@ private struct TVRow: View {
     }
 }
 
-// MARK: - Úprava televize
+// MARK: - Editing a TV
 
-/// Ruční přidání nebo úprava uložené televize.
+/// Manually adding or editing a saved TV.
 struct EditTVView: View {
     @Environment(SamsungTVClient.self) private var client
     @Environment(\.dismiss) private var dismiss
@@ -193,8 +193,8 @@ struct EditTVView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Název") {
-                    TextField("Obývák", text: $name)
+                Section("Name") {
+                    TextField("Living Room", text: $name)
                 }
 
                 Section {
@@ -203,12 +203,12 @@ struct EditTVView: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                 } header: {
-                    Text("IP adresa")
+                    Text("IP Address")
                 } footer: {
                     if !host.isEmpty && !hostIsValid {
-                        Text("Zadej adresu ve tvaru 192.168.1.50.").foregroundStyle(.red)
+                        Text("Enter an address like 192.168.1.50.").foregroundStyle(.red)
                     } else {
-                        Text("Na TV: Nastavení → Obecné → Síť → Stav sítě → Nastavení IP. V routeru jí nastav pevnou adresu, ať se nemění.")
+                        Text("On the TV: Settings → General → Network → Network Status → IP Settings. Reserve a fixed address for it in your router so it doesn't change.")
                     }
                 }
 
@@ -218,30 +218,30 @@ struct EditTVView: View {
                         .textInputAutocapitalization(.characters)
                         .autocorrectionDisabled()
                 } header: {
-                    Text("MAC adresa (pro zapnutí)")
+                    Text("MAC Address (for Power On)")
                 } footer: {
                     if !macIsValid {
-                        Text("MAC adresa má 12 šestnáctkových znaků, např. AA:BB:CC:DD:EE:FF.").foregroundStyle(.red)
+                        Text("A MAC address has 12 hex digits, e.g. AA:BB:CC:DD:EE:FF.").foregroundStyle(.red)
                     } else {
-                        Text("Na TV musí být zapnuté Nastavení → Obecné → Síť → Odborné nastavení → Zapnutí přes mobil.")
+                        Text("On the TV, turn on Settings → General → Network → Expert Settings → Power On with Mobile.")
                     }
                 }
 
                 if !isNew && tv.token != nil && trimmedHost != tv.host {
                     Section {
-                        Text("Po změně IP adresy bude potřeba televizi spárovat znovu.")
+                        Text("After changing the IP address, the TV will need to be paired again.")
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .navigationTitle(isNew ? "Nová televize" : "Upravit televizi")
+            .navigationTitle(isNew ? "New TV" : "Edit TV")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Zrušit") { dismiss() }
+                    Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Uložit", action: save)
+                    Button("Save", action: save)
                         .disabled(!hostIsValid || !macIsValid)
                 }
             }

@@ -3,12 +3,12 @@ import Combine
 import MediaPlayer
 import SwiftUI
 
-/// Ovládání hlasitosti televize bočními tlačítky iPhonu, dokud je aplikace otevřená.
+/// Controls the TV volume with the iPhone's side buttons while the app is open.
 ///
-/// iOS na to nemá veřejné API. Sledujeme proto hlasitost telefonu a každou změnu přeložíme
-/// na VOL+/VOL−. Neviditelné `MPVolumeView` potlačí systémový ukazatel hlasitosti a umožní
-/// hodnotu vracet doprostřed, aby šlo mačkat stejným směrem pořád dokola. Při ukončení
-/// se hlasitost telefonu vrátí na původní hodnotu.
+/// iOS has no public API for this. So we watch the phone's volume and turn every change
+/// into VOL+/VOL−. An invisible `MPVolumeView` suppresses the system volume HUD and lets us
+/// reset the value to the middle, so you can keep pressing in the same direction. On stop
+/// the phone's volume returns to its original value.
 final class VolumeButtonObserver {
     var onPress: ((_ up: Bool) -> Void)?
     fileprivate weak var volumeView: MPVolumeView?
@@ -16,13 +16,13 @@ final class VolumeButtonObserver {
     private var subscription: AnyCancellable?
     private var lastVolume: Float = 0
     private var originalVolume: Float?
-    /// Hodnota, kterou jsme nastavili sami. Její změnu nepovažujeme za stisk tlačítka.
+    /// Value we set ourselves. Its change doesn't count as a button press.
     private var ignoredValue: Float?
 
     func start() {
         guard subscription == nil else { return }
         let session = AVAudioSession.sharedInstance()
-        // .ambient nepřeruší hudbu, která v telefonu zrovna hraje.
+        // .ambient doesn't interrupt music currently playing on the phone.
         try? session.setCategory(.ambient, options: [.mixWithOthers])
         try? session.setActive(true)
 
@@ -33,7 +33,7 @@ final class VolumeButtonObserver {
             .dropFirst()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] new in self?.volumeChanged(to: new) }
-        // Na kraji rozsahu by se další stisk stejným směrem neprojevil.
+        // At the edge of the range another press in the same direction would have no effect.
         if volume < 0.1 || volume > 0.9 { setSystemVolume(0.5) }
     }
 
@@ -64,7 +64,7 @@ final class VolumeButtonObserver {
     }
 }
 
-/// Skoro neviditelné systémové `MPVolumeView`. Dokud je na obrazovce, iOS neukazuje vlastní ukazatel hlasitosti.
+/// A nearly invisible system `MPVolumeView`. While it's on screen, iOS doesn't show its own volume HUD.
 struct SystemVolumeView: UIViewRepresentable {
     let observer: VolumeButtonObserver
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Psaní do textového pole na televizi (hledání v YouTube, Netflixu…) klávesnicí iPhonu.
+/// Typing into a text field on the TV (search in YouTube, Netflix…) with the iPhone keyboard.
 struct TextInputSheet: View {
     @Environment(SamsungTVClient.self) private var tv
     @Environment(\.dismiss) private var dismiss
@@ -9,10 +9,10 @@ struct TextInputSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Psaní na televizi")
+            Text("Type on TV")
                 .font(.headline)
 
-            TextField("Co hledáš?", text: $text)
+            TextField("What are you looking for?", text: $text)
                 .focused($focused)
                 .submitLabel(.send)
                 .autocorrectionDisabled()
@@ -23,8 +23,8 @@ struct TextInputSheet: View {
 
             Label {
                 Text(tv.isTVKeyboardActive
-                     ? "Televize čeká na text. Odešli ho klávesou Odeslat."
-                     : "Nejdřív na televizi otevři pole pro psaní, třeba hledání. Panel se pak otevře sám.")
+                     ? "The TV is waiting for text. Send it with the Send key."
+                     : "First open a text field on the TV, such as search. This panel then opens by itself.")
             } icon: {
                 Image(systemName: tv.isTVKeyboardActive ? "checkmark.circle.fill" : "info.circle")
                     .foregroundStyle(tv.isTVKeyboardActive ? .green : .secondary)
@@ -33,7 +33,7 @@ struct TextInputSheet: View {
             .foregroundStyle(.secondary)
 
             Button(action: send) {
-                Text("Odeslat")
+                Text("Send")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)

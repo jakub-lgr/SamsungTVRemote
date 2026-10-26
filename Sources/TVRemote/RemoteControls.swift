@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Krátká vibrace při každém stisku, ať je cítit, že tlačítko zareagovalo.
+/// A short haptic on every press so you can feel the button responded.
 private let haptics = UIImpactFeedbackGenerator(style: .light)
 
 private func tap(_ action: () -> Void) {
@@ -23,8 +23,8 @@ struct RemoteKeyStyle<S: Shape>: ButtonStyle {
     }
 }
 
-/// Vzhled jako `RemoteKeyStyle`, ale akce proběhne hned při dotyku a při podržení se opakuje
-/// jako na fyzickém ovladači. Vlastní akce tlačítka se proto nechává prázdná.
+/// Looks like `RemoteKeyStyle`, but the action runs on touch-down and repeats while held,
+/// like a physical remote. The button's own action is therefore left empty.
 struct RepeatingKeyStyle<S: Shape>: ButtonStyle {
     var shape: S
     var fill: Color = Color(white: 0.2)
@@ -48,7 +48,7 @@ private struct RepeatWhilePressed: ViewModifier {
             guard pressed else { return }
             tap(action)
             repeatTask = Task {
-                // Krátká prodleva, aby obyčejné klepnutí neposlalo klávesu dvakrát.
+                // Short delay so a plain tap doesn't send the key twice.
                 try? await Task.sleep(for: .milliseconds(450))
                 while !Task.isCancelled {
                     tap(action)
@@ -60,16 +60,16 @@ private struct RepeatWhilePressed: ViewModifier {
     }
 }
 
-/// Sdílené mezi stylem a akcí tlačítka. Akce po rychlém klepnutí může proběhnout dřív než
-/// `onChange(isPressed)`, proto jsou to dva nezávislé příznaky a na pořadí nezáleží.
+/// Shared between the button's style and action. After a quick tap the action can run before
+/// `onChange(isPressed)`, so these are two independent flags and the order doesn't matter.
 private final class HoldState {
-    /// Televize dostala Press a čeká na Release.
+    /// The TV got Press and is waiting for Release.
     var isHolding = false
-    /// Po podržení už puštění nesmí poslat ještě obyčejné klepnutí.
+    /// After a hold, lifting the finger must not also send a plain tap.
     var skipNextTap = false
 }
 
-/// Vzhled jako `RemoteKeyStyle`. Po delším stisku navíc ohlásí začátek a konec podržení.
+/// Looks like `RemoteKeyStyle`. After a longer press it also reports the start and end of the hold.
 private struct HoldableKeyStyle<S: Shape>: ButtonStyle {
     var shape: S
     var fill: Color
@@ -95,7 +95,7 @@ private struct HoldWhilePressed: ViewModifier {
             holdTask?.cancel()
             if pressed {
                 holdTask = Task {
-                    // Klepnutí zůstává obyčejným Click, podržení začne až po této prodlevě.
+                    // A tap stays a plain Click; the hold only starts after this delay.
                     try? await Task.sleep(for: .milliseconds(350))
                     guard !Task.isCancelled else { return }
                     state.isHolding = true
@@ -104,7 +104,7 @@ private struct HoldWhilePressed: ViewModifier {
                 }
             } else {
                 release()
-                // Když prst sjel z tlačítka, akce se nezavolá a klepnutí by zůstalo spolknuté.
+                // If the finger slid off the button, the action isn't called and the next tap would stay swallowed.
                 Task {
                     try? await Task.sleep(for: .milliseconds(300))
                     state.skipNextTap = false
@@ -112,7 +112,7 @@ private struct HoldWhilePressed: ViewModifier {
             }
         }
         .onDisappear {
-            // Tlačítko zmizelo pod prstem: klávesa nesmí na televizi zůstat držená.
+            // The button disappeared under the finger: the key must not stay held on the TV.
             holdTask?.cancel()
             release()
         }
@@ -125,8 +125,8 @@ private struct HoldWhilePressed: ViewModifier {
     }
 }
 
-/// Tlačítko klávesy: klepnutí zavolá `action`, podržení `hold(true)` a po puštění `hold(false)`.
-/// Bez `hold` je to obyčejné tlačítko.
+/// Key button: a tap calls `action`, a hold calls `hold(true)` and `hold(false)` on release.
+/// Without `hold` it's a plain button.
 private struct KeyButton<S: Shape, Label: View>: View {
     var shape: S
     var fill: Color = Color(white: 0.2)
@@ -149,7 +149,7 @@ private struct KeyButton<S: Shape, Label: View>: View {
     }
 }
 
-/// Tlačítko ovladače se zaobleným tvarem a vibrací při stisku.
+/// Remote button with a rounded shape and a haptic on press.
 struct RemoteKeyButton<Label: View>: View {
     var cornerRadius: CGFloat = 20
     let action: () -> Void
@@ -163,7 +163,7 @@ struct RemoteKeyButton<Label: View>: View {
     }
 }
 
-/// Kulaté tlačítko s ikonou a popiskem pod ním.
+/// Round button with an icon and a caption below it.
 struct RemoteKey: View {
     let systemImage: String
     let title: String
@@ -199,20 +199,20 @@ struct PowerKey: View {
                 .frame(width: 52, height: 52)
         }
         .buttonStyle(RemoteKeyStyle(shape: Circle(), fill: .red.opacity(0.85)))
-        .accessibilityLabel("Zapnout nebo vypnout")
+        .accessibilityLabel("Power")
     }
 }
 
-/// Barevná tlačítka pro teletext, HbbTV a nabídky aplikací. Pořadí odpovídá ovladači Samsung.
+/// Colour buttons for teletext, HbbTV and app menus. The order matches the Samsung remote.
 struct ColorKeys: View {
     let onPress: (TVKey) -> Void
     let onHold: (TVKey, Bool) -> Void
 
     private let keys: [(key: TVKey, color: Color, label: String)] = [
-        (.red, .red, "Červené tlačítko"),
-        (.green, .green, "Zelené tlačítko"),
-        (.yellow, .yellow, "Žluté tlačítko"),
-        (.blue, .blue, "Modré tlačítko"),
+        (.red, .red, "Red button"),
+        (.green, .green, "Green button"),
+        (.yellow, .yellow, "Yellow button"),
+        (.blue, .blue, "Blue button"),
     ]
 
     var body: some View {
@@ -235,7 +235,7 @@ struct ColorKeys: View {
     }
 }
 
-/// Svislý dvojtlačítkový ovladač pro hlasitost a kanály. `onPress(true)` je nahoru.
+/// Vertical two-button rocker for volume and channels. `onPress(true)` is up.
 struct Rocker: View {
     let title: String
     let upImage: String
@@ -244,12 +244,12 @@ struct Rocker: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            half(systemImage: upImage, label: "\(title) nahoru") { onPress(true) }
+            half(systemImage: upImage, label: "\(title) up") { onPress(true) }
             Text(title)
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.secondary)
                 .padding(.vertical, 6)
-            half(systemImage: downImage, label: "\(title) dolů") { onPress(false) }
+            half(systemImage: downImage, label: "\(title) down") { onPress(false) }
         }
         .padding(6)
         .background(Color(white: 0.16), in: Capsule())
@@ -266,11 +266,11 @@ struct Rocker: View {
     }
 }
 
-/// Kruhový ovladač se šipkami a OK uprostřed.
+/// Circular pad with arrows and OK in the middle.
 struct DirectionPad: View {
     var size: CGFloat = 260
     let onPress: (TVKey) -> Void
-    /// Jen pro OK. Šipky se při podržení opakují, jako na fyzickém ovladači.
+    /// Only for OK. The arrows repeat while held, like a physical remote.
     let onHold: (TVKey, Bool) -> Void
 
     var body: some View {
@@ -279,13 +279,13 @@ struct DirectionPad: View {
                 .fill(Color(white: 0.16))
                 .overlay(Circle().stroke(.white.opacity(0.08), lineWidth: 1))
 
-            arrow(.up, systemImage: "chevron.up", label: "Nahoru")
+            arrow(.up, systemImage: "chevron.up", label: "Up")
                 .offset(y: -size * 0.34)
-            arrow(.down, systemImage: "chevron.down", label: "Dolů")
+            arrow(.down, systemImage: "chevron.down", label: "Down")
                 .offset(y: size * 0.34)
-            arrow(.left, systemImage: "chevron.left", label: "Doleva")
+            arrow(.left, systemImage: "chevron.left", label: "Left")
                 .offset(x: -size * 0.34)
-            arrow(.right, systemImage: "chevron.right", label: "Doprava")
+            arrow(.right, systemImage: "chevron.right", label: "Right")
                 .offset(x: size * 0.34)
 
             KeyButton(

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Číselník pro přímou volbu kanálu. Televize po chvíli sama přepne, OK přepne hned.
+/// Number pad for choosing a channel directly. The TV switches after a moment by itself; OK switches right away.
 struct NumberPadSheet: View {
     @Environment(SamsungTVClient.self) private var tv
 
@@ -8,7 +8,7 @@ struct NumberPadSheet: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Kanál")
+            Text("Channel")
                 .font(.headline)
                 .foregroundStyle(.secondary)
 
@@ -16,9 +16,9 @@ struct NumberPadSheet: View {
                 ForEach(1...9, id: \.self) { digit in
                     key(Text("\(digit)").font(.title.weight(.semibold)), label: "\(digit)", key: .digit(digit))
                 }
-                key(Image(systemName: "arrow.uturn.left").font(.title3.weight(.semibold)), label: "Předchozí kanál", key: .previousChannel)
+                key(Image(systemName: "arrow.uturn.left").font(.title3.weight(.semibold)), label: "Previous Channel", key: .previousChannel)
                 key(Text("0").font(.title.weight(.semibold)), label: "0", key: .digit(0))
-                key(Text("OK").font(.title3.weight(.bold)), label: "Potvrdit", key: .enter)
+                key(Text("OK").font(.title3.weight(.bold)), label: "Confirm", key: .enter)
             }
         }
         .padding(24)

@@ -2,7 +2,7 @@ import Foundation
 import Network
 import Observation
 
-/// Televize Samsung nalezená v místní síti.
+/// A Samsung TV found on the local network.
 nonisolated struct DiscoveredTV: Identifiable, Hashable, Sendable {
     let id: String
     let name: String
@@ -12,11 +12,11 @@ nonisolated struct DiscoveredTV: Identifiable, Hashable, Sendable {
     let isOn: Bool
 }
 
-/// Hledá televize Samsung v síti přes Bonjour (služba Smart View `_samsungmsf._tcp`).
+/// Looks for Samsung TVs on the network via Bonjour (the Smart View service `_samsungmsf._tcp`).
 ///
-/// SSDP, které Samsung používá jinak, potřebuje od Applu multicast oprávnění, které bezplatný
-/// účet nedostane. Bonjour obstarává systém, takže funguje bez něj. Záznam služby obsahuje
-/// adresu REST API televize, odkud načteme model a MAC adresu.
+/// SSDP, which Samsung otherwise uses, needs a multicast entitlement from Apple that a free
+/// account doesn't get. Bonjour is handled by the system, so it works without one. The service record
+/// contains the TV's REST API address, from which we load the model and MAC address.
 @Observable
 final class TVDiscovery {
     enum State: Equatable {
@@ -29,7 +29,7 @@ final class TVDiscovery {
     private(set) var televisions: [DiscoveredTV] = []
 
     private var browser: NWBrowser?
-    /// Adresy API, které už načítáme, ať se stejná televize nedotazuje víckrát.
+    /// API addresses already being loaded, so the same TV isn't queried more than once.
     private var requested: Set<URL> = []
 
     func start() {
@@ -59,10 +59,10 @@ final class TVDiscovery {
         switch newState {
         case .failed(let error), .waiting(let error):
             if case .dns(let code) = error, code == -65555 {
-                // kDNSServiceErr_NoAuth: uživatel aplikaci nepovolil přístup k místní síti.
-                state = .failed("Aplikace nemá přístup k místní síti. Povol ho v Nastavení iPhonu → TV Ovladač.")
+                // kDNSServiceErr_NoAuth: the user didn't allow the app access to the local network.
+                state = .failed("The app has no access to the local network. Allow it in iPhone Settings → Privacy & Security → Local Network.")
             } else {
-                state = .failed("Hledání televizí selhalo: \(error.localizedDescription)")
+                state = .failed("Looking for TVs failed: \(error.localizedDescription)")
             }
         default:
             break
@@ -87,7 +87,7 @@ final class TVDiscovery {
               let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
               let device = json["device"] as? [String: Any],
               let host = (device["ip"] as? String) ?? url.host(),
-              // Párování tokenem (port 8002) umí jen televize, které ho samy hlásí.
+              // Only TVs that advertise it support token pairing (port 8002).
               (device["TokenAuthSupport"] as? String) == "true" else { return }
 
         let rawName = (device["name"] as? String) ?? (json["name"] as? String) ?? "Samsung TV"

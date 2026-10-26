@@ -1,146 +1,148 @@
-# TV Ovladač
+# TV Remote
 
-iPhone aplikace pro ovládání televizí Samsung se systémem Tizen přes domácí Wi-Fi.
-Bez cloudu, bez účtu Samsung a bez SmartThings. Telefon mluví s televizí přímo.
+An iPhone app for controlling Samsung TVs running Tizen over your home Wi-Fi.
+No cloud, no Samsung account and no SmartThings. The phone talks to the TV directly.
 
-Ovladač je Swift balíček, takže ho jde vložit i do jiné aplikace. Samostatná aplikace je ve složce
-`App/`.
+The remote is a Swift package, so it can also be embedded in another app. The standalone app
+lives in the `App/` folder.
 
 <p align="center">
-  <img src="Docs/remote.png" width="300" alt="Obrazovka ovladače">
+  <img src="Docs/remote.png" width="300" alt="Remote screen">
 </p>
 
-## Co umí
+## Features
 
-- **Klasický ovladač:** šipky a OK, Zpět, Domů, Zdroj, hlasitost, kanály, ztlumení a vypínač.
-- **Podržení tlačítka** opakuje klávesu jako fyzický ovladač (hlasitost, kanály, šipky).
-- **Hlasitost na číslo:** posuvník nebo zadání přesné hodnoty 0–100. Aktuální hlasitost i ztlumení se čtou z televize.
-- **Hlasitost bočními tlačítky iPhonu,** dokud je aplikace otevřená.
-- **Psaní z klávesnice telefonu** do hledání v YouTube, Netflixu a dalších. Panel se otevře sám, jakmile televize ukáže klávesnici.
-- **Aplikace z televize:** seznam nainstalovaných aplikací, spuštění jedním klepnutím, oblíbené připnuté přímo na ovladači.
-- **Barevná tlačítka** (červené, zelené, žluté, modré) pro teletext, HbbTV a nabídky aplikací.
-- **Číselník** pro přímou volbu kanálu.
-- **Zapnutí televize** přes Wake-on-LAN.
-- **Více televizí:** hledání v síti, každá televize má vlastní párování a oblíbené aplikace, přepínání jedním klepnutím.
-- **Siri a Zkratky:** zapnout/vypnout, ztlumit, nastavit nebo změnit hlasitost, spustit aplikaci.
+- **Classic remote:** arrows and OK, Back, Home, Source, volume, channels, mute and power.
+- **Holding a key** works like a physical remote: arrows, volume and channels repeat, other keys
+  send a real long press (e.g. holding OK opens programme info).
+- **Volume by number:** a slider or an exact value from 0 to 100. The current volume and mute state are read from the TV.
+- **Volume with the iPhone's side buttons** while the app is open.
+- **Typing from the phone's keyboard** into search in YouTube, Netflix and others. The panel opens by itself as soon as the TV shows its keyboard.
+- **TV apps:** a list of installed apps, open one with a tap, favourites pinned right on the remote.
+- **Colour buttons** (red, green, yellow, blue) for teletext, HbbTV and app menus.
+- **Number pad** for choosing a channel directly.
+- **Turning the TV on** via Wake-on-LAN.
+- **Multiple TVs:** network discovery, each TV has its own pairing and favourite apps, switch with a tap.
+- **Siri and Shortcuts:** turn on/off, mute, set or change the volume, open an app.
 
-## Jak to funguje
+## How it works
 
-Televize Samsung s Tizenem mají v síti několik rozhraní. Aplikace používá tato:
+Samsung Tizen TVs expose several interfaces on the network. The app uses these:
 
-| Co | Rozhraní | Port |
+| What | Interface | Port |
 |---|---|---|
-| Klávesy, aplikace, psaní textu | WebSocket API (`samsung.remote.control`) přes TLS, párování tokenem | 8002 |
-| Hledání televizí | Bonjour, služba Smart View `_samsungmsf._tcp` | – |
-| Údaje o televizi (model, MAC, stav) | REST API `/api/v2/` | 8001 |
-| Přesná hlasitost a ztlumení | UPnP `RenderingControl` (SOAP) | 9197 |
-| Zapnutí | Wake-on-LAN, magic packet přes UDP | 9 |
+| Keys, apps, typing text | WebSocket API (`samsung.remote.control`) over TLS, token pairing | 8002 |
+| Finding TVs | Bonjour, the Smart View service `_samsungmsf._tcp` | – |
+| TV details (model, MAC, state) | REST API `/api/v2/` | 8001 |
+| Exact volume and mute | UPnP `RenderingControl` (SOAP) | 9197 |
+| Power on | Wake-on-LAN, magic packet over UDP | 9 |
 
-Při prvním připojení televize zobrazí dotaz na povolení. Po potvrzení vydá token, který si aplikace
-uloží, a další připojení už proběhnou bez ptaní.
+On the first connection the TV asks for permission. Once you allow it, it issues a token that the
+app stores, and later connections go through without asking.
 
-Aplikace hledá televize přes Bonjour, ne přes SSDP. SSDP potřebuje od Applu multicast oprávnění, které
-bezplatný vývojářský účet nedostane. Bonjour obstarává systém, takže funguje i bez něj.
+The app finds TVs via Bonjour, not SSDP. SSDP needs a multicast entitlement from Apple that a free
+developer account doesn't get. Bonjour is handled by the system, so it works without one.
 
-## Kompatibilita
+## Compatibility
 
-Televize Samsung s Tizenem, které podporují párování tokenem. Zhruba modely od roku 2017 a novější.
-Aplikace nabízí v hledání jen televize, které tuto podporu samy hlásí (`TokenAuthSupport`).
+Samsung Tizen TVs that support token pairing, roughly 2017 models and newer. Discovery only offers
+TVs that advertise this support themselves (`TokenAuthSupport`).
 
-Vyzkoušeno na:
-- Samsung UE55RU8002 (řada RU8000, 2019)
-- Samsung UE32T5372 (řada T5300, 2020)
+Tested on:
+- Samsung UE55RU8002 (RU8000 series, 2019)
+- Samsung UE32T5372 (T5300 series, 2020)
 
-## Instalace
+## Installation
 
-Aplikace není v App Storu. Nainstaluješ si ji z Xcode do vlastního iPhonu.
+The app isn't on the App Store. You install it on your own iPhone from Xcode.
 
-1. Otevři `App/SamsungTVRemote.xcodeproj` v Xcode 27 nebo novějším.
-2. V *Signing & Capabilities* vyber svůj tým. Stačí bezplatné Apple ID (Personal Team).
-   Kdyby bylo bundle ID obsazené, změň ho na vlastní.
-3. Na iPhonu zapni *Nastavení → Soukromí a zabezpečení → Režim vývojáře* a aplikaci spusť z Xcode.
-4. Povol aplikaci **přístup k místní síti**.
+1. Open `App/SamsungTVRemote.xcodeproj` in Xcode 27 or later.
+2. In *Signing & Capabilities* choose your team. A free Apple ID (Personal Team) is enough.
+   If the bundle ID is taken, change it to your own.
+3. On the iPhone turn on *Settings → Privacy & Security → Developer Mode* and run the app from Xcode.
+4. Allow the app **local network access**.
 
-S bezplatným účtem vyprší podpis aplikace po 7 dnech a je potřeba ji znovu nahrát z Xcode.
+With a free account the app's signature expires after 7 days and it has to be installed again from Xcode.
 
-### Nastavení televize
+### TV setup
 
-- Televize a telefon musí být ve stejné síti.
-- Pro zapnutí přes Wake-on-LAN: *Nastavení → Obecné → Síť → Odborné nastavení → Zapnutí přes mobil*.
-- Pevná IP adresa televize (rezervace v routeru) se hodí, ať se po restartu routeru nemusí hledat znovu.
+- The TV and the phone must be on the same network.
+- For Wake-on-LAN: *Settings → General → Network → Expert Settings → Power On with Mobile*.
+- A fixed IP address for the TV (a reservation in your router) helps, so it doesn't have to be found again after a router restart.
 
-## Struktura projektu
+## Project structure
 
 ```
-Package.swift                  # Swift balíček TVRemote
+Package.swift                  # the TVRemote Swift package
 Sources/TVRemote/
-├── TVRemote.swift             # veřejné rozhraní balíčku
-├── SamsungTVClient.swift      # spojení s televizí, klávesy, aplikace, text, přepínání televizí
-├── TVConfig.swift             # uložené televize (UserDefaults)
-├── TVDiscovery.swift          # hledání televizí přes Bonjour
-├── TVVolume.swift             # hlasitost a ztlumení přes UPnP
-├── WakeOnLAN.swift            # magic packet pro zapnutí
-├── TVIntents.swift            # akce pro Siri a Zkratky
-├── VolumeButtonObserver.swift # boční tlačítka iPhonu
-├── ContentView.swift          # obrazovka ovladače
-├── RemoteControls.swift       # tlačítka, D-pad, opakování při podržení
+├── TVRemote.swift             # the package's public interface
+├── SamsungTVClient.swift      # TV connection, keys, apps, text, switching TVs
+├── TVConfig.swift             # saved TVs (UserDefaults)
+├── TVDiscovery.swift          # finding TVs via Bonjour
+├── TVVolume.swift             # volume and mute via UPnP
+├── WakeOnLAN.swift            # magic packet for power on
+├── TVIntents.swift            # Siri and Shortcuts actions
+├── VolumeButtonObserver.swift # iPhone side buttons
+├── ContentView.swift          # remote screen
+├── RemoteControls.swift       # buttons, D-pad, repeat and long press
 └── …Sheet.swift, SettingsView.swift
-App/                           # samostatná aplikace: projekt, ikona, fráze pro Siri
-Tools/faketv.py                # falešná televize pro testování
-Design/AppIcon/                # skripty pro Blender, ze kterých je vyrenderovaná ikona
+App/                           # standalone app: project, icon, Siri phrases
+Tools/faketv.py                # fake TV for testing
+Design/AppIcon/                # Blender scripts the icon was rendered from
 ```
 
-## Použití jako balíček
+## Using it as a package
 
 ```swift
 import AppIntents
 import SwiftUI
 import TVRemote
 
-// Hlavní obrazovka. Spojení s televizí naváže sama a při zmizení ho ukončí.
+// The main screen. It connects to the TV by itself and disconnects when it disappears.
 TVRemoteView()
 
-// Název, SF Symbol a barva, třeba pro rozcestník s víc aplikacemi.
+// Name, SF Symbol and colour, e.g. for a launcher with several apps.
 TVRemote.name; TVRemote.systemImage; TVRemote.tint
 
-// Akce pro Siri a Zkratky jsou v balíčku, systém je ale najde jen přes AppIntentsPackage aplikace.
+// The Siri and Shortcuts actions live in the package, but the system only finds them through the app's AppIntentsPackage.
 struct MyAppIntents: AppIntentsPackage {
     static var includedPackages: [any AppIntentsPackage.Type] { [TVRemoteIntents.self] }
 }
 ```
 
-Hotové fráze pro Siri (`AppShortcutsProvider`) Xcode v balíčku nenajde, aplikace je proto skládá
-sama z veřejných akcí (`MuteTVIntent`, `SetTVVolumeIntent`, `AdjustTVVolumeIntent`,
-`TurnOffTVIntent`, `TurnOnTVIntent`, `OpenTVAppIntent`) a do
-`TVRemote.appShortcutParametersChanged` dosadí `updateAppShortcutParameters()` svého providera.
-Vzor je v `App/SamsungTVRemote/`.
+Xcode doesn't find ready-made Siri phrases (`AppShortcutsProvider`) in a package, so the app builds
+them itself from the public actions (`MuteTVIntent`, `SetTVVolumeIntent`, `AdjustTVVolumeIntent`,
+`TurnOffTVIntent`, `TurnOnTVIntent`, `OpenTVAppIntent`) and plugs its provider's
+`updateAppShortcutParameters()` into `TVRemote.appShortcutParametersChanged`.
+See `App/SamsungTVRemote/` for an example.
 
-Aplikace navíc potřebuje v Info.plist:
+The app also needs these in Info.plist:
 
 - `NSLocalNetworkUsageDescription`
-- `NSBonjourServices` s položkou `_samsungmsf._tcp` (hledání televizí)
+- `NSBonjourServices` with the entry `_samsungmsf._tcp` (finding TVs)
 
-## Testování bez televize
+## Testing without a TV
 
-`Tools/faketv.py` napodobí WebSocket API televize na `127.0.0.1:8002` a vypisuje všechno, co aplikace pošle:
+`Tools/faketv.py` imitates the TV's WebSocket API on `127.0.0.1:8002` and prints everything the app sends:
 
 ```bash
 python3 Tools/faketv.py
 xcrun simctl launch booted cz.jakublanger.SamsungTVRemote -tv.testHost 127.0.0.1
 ```
 
-Spouštěcí argument `-tv.testHost` přesměruje aplikaci jen pro toto spuštění, uložené nastavení zůstane
-beze změny (v aplikaci musí být uložená aspoň jedna televize). Simulátor používá síť Macu, takže když
-je Mac ve stejné Wi-Fi jako televize, jde aplikaci zkoušet i proti skutečné televizi přímo ze simulátoru.
+The launch argument `-tv.testHost` redirects the app for that launch only; the stored settings stay
+unchanged (at least one TV must be saved in the app). The simulator uses the Mac's network, so when
+the Mac is on the same Wi-Fi as the TV, you can also try the app against a real TV straight from
+the simulator.
 
-## Omezení
+## Limitations
 
-- Boční tlačítka iPhonu fungují přes neoficiální postup (iOS na to nemá veřejné API).
-- Siri česky nemluví, fráze jsou proto anglicky. V aplikaci Zkratky jsou všechny akce česky.
-- Wake-on-LAN posílá paket přímo na IP televize, protože broadcast iOS bez multicast oprávnění blokuje.
-  Televize v hlubokém spánku ho občas nemusí zachytit.
+- The iPhone side buttons work through an unofficial approach (iOS has no public API for it).
+- Siri phrases are in English only.
+- Wake-on-LAN sends the packet straight to the TV's IP, because iOS blocks broadcast without a
+  multicast entitlement. A TV in deep sleep may occasionally miss it.
 
 ---
 
-Osobní projekt, nijak nesouvisí se společností Samsung. Samsung, Tizen a Smart View jsou ochranné známky
-svých vlastníků.
+A personal project, not affiliated with Samsung. Samsung, Tizen and Smart View are trademarks of
+their respective owners.

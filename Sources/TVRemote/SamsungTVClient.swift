@@ -2,13 +2,13 @@ import AppIntents
 import Foundation
 import Observation
 
-/// Spojení s televizí přes zabezpečený WebSocket na portu 8002.
+/// Connection to the TV over a secure WebSocket on port 8002.
 ///
-/// Při prvním připojení televize zobrazí dotaz na povolení a po potvrzení pošle token,
-/// který si uložíme do `TVConfig.token`. Další připojení už se neptají.
+/// On the first connection the TV asks for permission and, once allowed, sends a token
+/// that we store in `TVConfig.token`. Later connections no longer ask.
 @Observable
 final class SamsungTVClient {
-    /// Jediná instance sdílená aplikací i Zkratkami/Siri.
+    /// Single instance shared by the app and by Shortcuts/Siri.
     static let shared = SamsungTVClient()
 
     enum State: Equatable {
@@ -23,18 +23,18 @@ final class SamsungTVClient {
         case unreachable
 
         var errorDescription: String? {
-            "Televize není dostupná. Je zapnutá a ve stejné Wi-Fi?"
+            "The TV can't be reached. Is it on and on the same Wi-Fi?"
         }
     }
 
     private(set) var state: State = .disconnected
     private(set) var isWaking = false
-    /// Spojení spadlo a aplikace ho sama potichu obnovuje. UI místo chyby ukáže jen „Obnovuji spojení…“.
+    /// The connection dropped and the app is quietly restoring it. Instead of an error the UI only shows "Reconnecting…".
     private(set) var isReconnecting = false
-    /// Poslední známá hlasitost televize (0–100), `nil` dokud ji neznáme.
+    /// Last known TV volume (0–100), `nil` until we know it.
     private(set) var volume: Int?
     private(set) var isMuted: Bool?
-    /// Televize právě ukazuje klávesnici (třeba v hledání) a čeká na text.
+    /// The TV is showing its keyboard (e.g. in search) and waiting for text.
     private(set) var isTVKeyboardActive = false
     private(set) var installedApps: [TVApp] = TVConfig.knownApps
     var favoriteApps: [TVApp] = TVConfig.favoriteApps {
@@ -44,8 +44,8 @@ final class SamsungTVClient {
         }
     }
 
-    /// Jméno, pod kterým se aplikace ukáže na televizi. Délka je násobek 3,
-    /// aby base64 nemělo `=` a nebylo ho potřeba escapovat v URL.
+    /// Name the app shows up under on the TV. Its length is a multiple of 3
+    /// so the base64 has no `=` that would need escaping in the URL.
     private let clientName = "SamsungTVRemote"
 
     private var session: URLSession?
@@ -57,20 +57,20 @@ final class SamsungTVClient {
     private var pingTask: Task<Void, Never>?
     private var lastSend: Task<Void, Never>?
     private var volumeRefreshTask: Task<Void, Never>?
-    /// Zprávy odeslané během navazování spojení. Odešlou se, jakmile je spojení hotové.
+    /// Messages sent while connecting. They go out as soon as the connection is up.
     private var pending: [String] = []
 
-    /// Zrcadlí `TVConfig.token`, aby na změnu mohlo reagovat UI.
+    /// Mirrors `TVConfig.token` so the UI can react to changes.
     private(set) var hasToken = TVConfig.token != nil
 
-    /// Uložené televize a ta, kterou ovladač právě ovládá.
+    /// Saved TVs and the one the remote currently controls.
     private(set) var savedTVs: [SavedTV] = TVConfig.savedTVs
     private(set) var currentTVID: String? = TVConfig.currentTV?.id
     var currentTV: SavedTV? { savedTVs.first { $0.id == currentTVID } }
 
-    // MARK: - Televize
+    // MARK: - TVs
 
-    /// Přepne ovladač na jinou uloženou televizi a připojí se k ní jejím vlastním tokenem.
+    /// Switches the remote to another saved TV and connects with that TV's own token.
     func select(_ id: String) {
         guard id != currentTVID else {
             connectIfNeeded()
@@ -82,7 +82,7 @@ final class SamsungTVClient {
         connect()
     }
 
-    /// Uloží novou nebo upravenou televizi. Když se jí změní IP adresa, token už neplatí.
+    /// Saves a new or edited TV. If its IP address changes, the token is no longer valid.
     func save(_ tv: SavedTV, select shouldSelect: Bool = true) {
         var tvs = TVConfig.savedTVs
         var stored = tv
@@ -97,7 +97,7 @@ final class SamsungTVClient {
         if shouldSelect && !affectsCurrent {
             select(tv.id)
         } else if affectsCurrent {
-            // Upravená aktuální televize: připojíme se znovu s novými údaji.
+            // The current TV was edited: reconnect with the new details.
             disconnect()
             loadCurrentTV()
             connect()
@@ -106,7 +106,7 @@ final class SamsungTVClient {
         }
     }
 
-    /// Přidá televizi nalezenou v síti (nebo aktualizuje už uloženou) a přepne se na ni.
+    /// Adds a TV found on the network (or updates an already saved one) and switches to it.
     func add(_ found: DiscoveredTV) {
         let existing = TVConfig.savedTVs.first { $0.id == found.id || $0.host == found.host }
         var tv = existing ?? SavedTV(id: found.id, name: found.name, host: found.host, mac: found.mac)
@@ -128,7 +128,7 @@ final class SamsungTVClient {
         }
     }
 
-    /// Načte údaje aktuální televize do vlastností, které sleduje UI.
+    /// Loads the current TV's details into the properties the UI observes.
     private func loadCurrentTV() {
         volumeRefreshTask?.cancel()
         savedTVs = TVConfig.savedTVs
@@ -140,7 +140,7 @@ final class SamsungTVClient {
         isMuted = nil
     }
 
-    // MARK: - Spojení
+    // MARK: - Connection
 
     func connectIfNeeded() {
         switch state {
@@ -152,7 +152,7 @@ final class SamsungTVClient {
     func connect() {
         let host = TVConfig.host
         guard TVConfig.isValidIPv4(host) else {
-            state = .failed("Vyber v nastavení televizi.")
+            state = .failed("Choose a TV in Settings.")
             return
         }
         teardown()
@@ -167,7 +167,7 @@ final class SamsungTVClient {
             components.queryItems?.append(URLQueryItem(name: "token", value: token))
         }
         guard let url = components.url else {
-            state = .failed("Nepodařilo se sestavit adresu televize.")
+            state = .failed("Couldn't build the TV's address.")
             return
         }
 
@@ -179,12 +179,12 @@ final class SamsungTVClient {
         task.resume()
 
         receiveTask = Task { await receiveLoop(task) }
-        // Bez tokenu čeká televize na potvrzení uživatelem (sama to vzdá zhruba po 30 s).
+        // Without a token the TV waits for the user to allow it (it gives up after about 30 s).
         let timeout: Duration = hasToken ? .seconds(8) : .seconds(45)
         timeoutTask = Task {
             try? await Task.sleep(for: timeout)
             guard !Task.isCancelled, task === self.task, state != .connected else { return }
-            fail("Televize neodpovídá. Je zapnutá a ve stejné Wi-Fi?")
+            fail("The TV isn't responding. Is it on and on the same Wi-Fi?")
         }
     }
 
@@ -199,13 +199,13 @@ final class SamsungTVClient {
         state = .disconnected
     }
 
-    /// Zapomene token, takže televize se při dalším připojení znovu zeptá.
+    /// Forgets the token, so the TV asks again on the next connection.
     func forgetPairing() {
         storeToken(nil)
         disconnect()
     }
 
-    /// Počká, než je spojení hotové, a když se to nepovede, vyhodí chybu. Pro Zkratky a Siri.
+    /// Waits until connected and throws if that fails. For Shortcuts and Siri.
     func waitUntilConnected(timeout: Duration = .seconds(10)) async throws {
         connectIfNeeded()
         let deadline = ContinuousClock.now + timeout
@@ -238,7 +238,7 @@ final class SamsungTVClient {
 
     private func fail(_ message: String) {
         teardown()
-        // Během obnovy spojení necháme stisknuté klávesy čekat, odejdou po úspěšném připojení.
+        // While reconnecting, pressed keys wait and go out once the connection is back.
         if !isReconnecting { pending.removeAll() }
         isTVKeyboardActive = false
         state = .failed(message)
@@ -261,10 +261,10 @@ final class SamsungTVClient {
         }
     }
 
-    // MARK: - Obnova spojení
+    // MARK: - Reconnecting
 
-    /// Navázané spojení spadlo (televize ho zavřela, Wi-Fi na chvíli vypadla…).
-    /// Zkusíme ho potichu obnovit s rostoucími prodlevami a chybu ukážeme, až když se to nepovede.
+    /// An established connection dropped (the TV closed it, Wi-Fi blinked…).
+    /// Quietly retry with growing delays and only show an error if that fails.
     private func connectionLost() {
         guard !isReconnecting else { return }
         teardown()
@@ -287,7 +287,7 @@ final class SamsungTVClient {
             }
             isReconnecting = false
             pending.removeAll()
-            state = .failed("Spojení s televizí se ztratilo. Je zapnutá a ve stejné Wi-Fi?")
+            state = .failed("Lost the connection to the TV. Is it on and on the same Wi-Fi?")
         }
     }
 
@@ -297,7 +297,7 @@ final class SamsungTVClient {
         isReconnecting = false
     }
 
-    /// Pravidelný ping drží spojení při životě a odhalí výpadek dřív než další stisk klávesy.
+    /// A regular ping keeps the connection alive and detects an outage before the next key press does.
     private func startPinging(_ task: URLSessionWebSocketTask) {
         pingTask?.cancel()
         let taskID = ObjectIdentifier(task)
@@ -342,9 +342,9 @@ final class SamsungTVClient {
             messages.forEach(transmit)
         case "ms.channel.unauthorized":
             storeToken(nil)
-            fail("Televize připojení odmítla. Zkus to znovu a na televizi zvol Povolit.")
+            fail("The TV refused the connection. Try again and choose Allow on the TV.")
         case "ms.channel.timeOut":
-            fail("Připojení nebylo na televizi včas potvrzeno.")
+            fail("The connection wasn't allowed on the TV in time.")
         case "ms.remote.imeStart":
             isTVKeyboardActive = true
         case "ms.remote.imeEnd":
@@ -358,7 +358,7 @@ final class SamsungTVClient {
         }
     }
 
-    // MARK: - Odesílání
+    // MARK: - Sending
 
     private func emit(_ message: [String: Any]) {
         guard let data = try? JSONSerialization.data(withJSONObject: message),
@@ -381,7 +381,7 @@ final class SamsungTVClient {
 
     private func transmit(_ text: String) {
         guard let task else { return }
-        // Každé odeslání čeká na předchozí, aby zprávy dorazily ve stejném pořadí, v jakém vznikly.
+        // Each send waits for the previous one so messages arrive in the order they were created.
         let previous = lastSend
         lastSend = Task {
             await previous?.value
@@ -389,22 +389,22 @@ final class SamsungTVClient {
                 try await task.send(.string(text))
             } catch {
                 guard task === self.task else { return }
-                // Spojení mezitím spadlo (třeba po uspání telefonu): obnov ho a zprávu pošli potom.
+                // The connection dropped meanwhile (e.g. after the phone slept): restore it and send the message afterwards.
                 pending.append(text)
                 if state == .connected { connectionLost() } else { connect() }
             }
         }
     }
 
-    /// Počká, až odejdou všechny dosud zařazené zprávy.
+    /// Waits until all queued messages have gone out.
     private func flush() async {
         await lastSend?.value
     }
 
-    // MARK: - Klávesy
+    // MARK: - Keys
 
-    /// `Click` je obyčejné klepnutí. `Press` a `Release` drží klávesu jako fyzický ovladač,
-    /// televize podle délky podržení rozlišuje dlouhý stisk (třeba OK otevře informace o pořadu).
+    /// `Click` is a plain tap. `Press` and `Release` hold the key like a physical remote;
+    /// the TV uses the hold length to detect a long press (e.g. OK opens programme info).
     enum KeyCommand: String {
         case click = "Click"
         case press = "Press"
@@ -413,7 +413,7 @@ final class SamsungTVClient {
 
     func send(_ key: TVKey, _ command: KeyCommand = .click) {
         if command != .press && (key == .volumeUp || key == .volumeDown || key == .mute) {
-            // Televize hlasitost změní až chvíli po klávese, stav proto načteme se zpožděním.
+            // The TV changes the volume a moment after the key, so read the state with a delay.
             refreshVolume(after: .milliseconds(500))
         }
         emit([
@@ -427,12 +427,12 @@ final class SamsungTVClient {
         ])
     }
 
-    /// Začátek (`true`) nebo konec (`false`) podržení klávesy.
+    /// Start (`true`) or end (`false`) of holding a key.
     func hold(_ key: TVKey, _ isDown: Bool) {
         send(key, isDown ? .press : .release)
     }
 
-    /// Vypínač: zapnutou televizi vypne klávesou, nedostupnou zkusí probudit přes Wake-on-LAN.
+    /// Power button: turns a running TV off with the key, tries to wake an unreachable one via Wake-on-LAN.
     func power() {
         switch state {
         case .connected, .connecting, .waitingForApproval:
@@ -442,16 +442,16 @@ final class SamsungTVClient {
         }
     }
 
-    /// Připojí se, pošle klávesu a počká na odeslání. Pro Zkratky a Siri.
+    /// Connects, sends the key and waits until it's sent. For Shortcuts and Siri.
     func sendWhenConnected(_ key: TVKey) async throws {
         try await waitUntilConnected()
         send(key)
         await flush()
     }
 
-    // MARK: - Psaní textu
+    // MARK: - Typing
 
-    /// Vloží text do pole, které je na televizi právě otevřené (hledání, přihlášení…), a potvrdí ho.
+    /// Puts text into the field currently open on the TV (search, sign-in…) and confirms it.
     func sendText(_ text: String) {
         emit([
             "method": "ms.remote.control",
@@ -467,7 +467,7 @@ final class SamsungTVClient {
         ])
     }
 
-    // MARK: - Aplikace
+    // MARK: - Apps
 
     func requestInstalledApps() {
         emit([
@@ -512,11 +512,11 @@ final class SamsungTVClient {
         }
         installedApps = apps.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         TVConfig.knownApps = installedApps
-        // Siri si tak obnoví seznam aplikací pro frázi „Open … on the TV“.
+        // Lets Siri refresh the app list for the phrase "Open … on the TV".
         TVRemote.appShortcutParametersChanged()
     }
 
-    // MARK: - Hlasitost
+    // MARK: - Volume
 
     func refreshVolume(after delay: Duration = .zero) {
         let host = TVConfig.host
@@ -525,14 +525,14 @@ final class SamsungTVClient {
         volumeRefreshTask = Task {
             if delay > .zero { try? await Task.sleep(for: delay) }
             let control = TVVolume(host: host)
-            // Mezitím se mohla přepnout televize – stará hodnota by patřila jiné.
+            // The TV may have been switched meanwhile – a stale value would belong to another one.
             guard !Task.isCancelled, let value = try? await control.current(), host == TVConfig.host else { return }
             volume = value
             if let muted = try? await control.isMuted(), !Task.isCancelled { isMuted = muted }
         }
     }
 
-    /// Nastaví hlasitost přesně na zadané číslo (ořízne se na 0–100).
+    /// Sets the volume to exactly the given number (clamped to 0–100).
     func setVolume(_ value: Int) async throws {
         let clamped = min(max(value, TVVolume.range.lowerBound), TVVolume.range.upperBound)
         volumeRefreshTask?.cancel()
@@ -553,7 +553,7 @@ final class SamsungTVClient {
         let host = TVConfig.host
         let mac = TVConfig.mac
         guard TVConfig.isValidMAC(mac) else {
-            state = .failed("Pro zapnutí televize doplň v nastavení její MAC adresu.")
+            state = .failed("To turn the TV on, add its MAC address in Settings.")
             return
         }
         do {
@@ -566,7 +566,7 @@ final class SamsungTVClient {
         isWaking = true
         wakeTask = Task {
             defer { isWaking = false }
-            // Televizi chvíli trvá, než nahodí síť. Paket opakujeme a průběžně se zkoušíme připojit.
+            // The TV takes a while to bring up its network. Repeat the packet and keep trying to connect.
             for _ in 0..<12 {
                 try? await Task.sleep(for: .seconds(3))
                 if Task.isCancelled || state == .connected { return }
@@ -574,7 +574,7 @@ final class SamsungTVClient {
                 if state != .connecting && state != .waitingForApproval { connect() }
             }
             if state != .connected {
-                state = .failed("Televize se nezapnula. Je na ní zapnuté „Zapnutí přes mobil“?")
+                state = .failed("The TV didn't turn on. Is \"Power On with Mobile\" enabled on it?")
             }
         }
     }
@@ -583,19 +583,19 @@ final class SamsungTVClient {
         if let urlError = error as? URLError {
             switch urlError.code {
             case .timedOut, .cannotConnectToHost, .cannotFindHost, .networkConnectionLost, .notConnectedToInternet:
-                return "Televize není dostupná. Je zapnutá a ve stejné Wi-Fi?"
+                return "The TV can't be reached. Is it on and on the same Wi-Fi?"
             default:
                 break
             }
         }
         if (error as NSError).domain == NSPOSIXErrorDomain {
-            return "Televize není dostupná. Je zapnutá a ve stejné Wi-Fi?"
+            return "The TV can't be reached. Is it on and on the same Wi-Fi?"
         }
-        return "Spojení s televizí selhalo: \(error.localizedDescription)"
+        return "Connection to the TV failed: \(error.localizedDescription)"
     }
 }
 
-/// Televize používá vlastní certifikát, kterému iOS nevěří. Přijmeme ho, ale jen pro IP adresu naší televize.
+/// The TV uses its own certificate that iOS doesn't trust. Accept it, but only for our TV's IP address.
 nonisolated final class TVCertificateTrust: NSObject, URLSessionDelegate {
     private let host: String
 

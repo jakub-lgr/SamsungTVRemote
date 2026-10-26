@@ -1,4 +1,4 @@
-/// Kódy kláves, které televize Samsung (Tizen) přijímá přes `ms.remote.control`.
+/// Key codes a Samsung (Tizen) TV accepts via `ms.remote.control`.
 enum TVKey: String {
     case power = "KEY_POWER"
     case volumeUp = "KEY_VOLUP"
@@ -18,7 +18,7 @@ enum TVKey: String {
     case red = "KEY_RED"
     case green = "KEY_GREEN"
     case yellow = "KEY_YELLOW"
-    /// Modré tlačítko Samsung pojmenoval podle odstínu na svých ovladačích.
+    /// Samsung named the blue button after the shade on its remotes.
     case blue = "KEY_CYAN"
     case digit0 = "KEY_0"
     case digit1 = "KEY_1"

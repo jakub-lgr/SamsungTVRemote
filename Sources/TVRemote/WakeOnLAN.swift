@@ -1,10 +1,10 @@
 import Darwin
 import Foundation
 
-/// Probuzení televize magic packetem (6× 0xFF a 16× MAC adresa) po UDP.
+/// Wakes the TV with a magic packet (6× 0xFF and 16× the MAC address) over UDP.
 ///
-/// Broadcast iOS bez multicast oprávnění od Applu blokuje, proto paket posíláme hlavně
-/// přímo na IP televize. Broadcast na podsíť jen zkusíme a jeho chybu ignorujeme.
+/// iOS blocks broadcast without a multicast entitlement from Apple, so the packet goes mainly
+/// straight to the TV's IP. Subnet broadcast is only attempted and its error ignored.
 nonisolated enum WakeOnLAN {
     enum Failure: LocalizedError {
         case invalidMAC
@@ -13,9 +13,9 @@ nonisolated enum WakeOnLAN {
 
         var errorDescription: String? {
             switch self {
-            case .invalidMAC: "MAC adresa televize není platná."
-            case .invalidIP: "IP adresa televize není platná."
-            case .socket(let code): "Paket pro zapnutí se nepodařilo odeslat (\(String(cString: strerror(code)))). Povolil jsi aplikaci přístup k místní síti?"
+            case .invalidMAC: "The TV's MAC address isn't valid."
+            case .invalidIP: "The TV's IP address isn't valid."
+            case .socket(let code): "Couldn't send the power-on packet (\(String(cString: strerror(code)))). Did you allow the app access to the local network?"
             }
         }
     }
@@ -32,7 +32,7 @@ nonisolated enum WakeOnLAN {
 
         try send(packet, fd: fd, to: ip, port: 9)
         try? send(packet, fd: fd, to: ip, port: 7)
-        // Předpokládá běžnou domácí síť /24.
+        // Assumes a typical /24 home network.
         let subnetBroadcast = ip.split(separator: ".").dropLast().joined(separator: ".") + ".255"
         try? send(packet, fd: fd, to: subnetBroadcast, port: 9)
     }

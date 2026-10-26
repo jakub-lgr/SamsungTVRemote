@@ -14,7 +14,7 @@ import TVRemote
     }
 }
 
-/// Akce pro Siri a Zkratky jsou v balíčku. Bez této registrace by je systém nenašel.
+/// The Siri and Shortcuts actions live in the package. Without this registration the system wouldn't find them.
 struct TVAppIntents: AppIntentsPackage {
     static var includedPackages: [any AppIntentsPackage.Type] {
         [TVRemoteIntents.self]

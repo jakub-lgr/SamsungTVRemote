@@ -1,50 +1,50 @@
 import AppIntents
 
-// Akce pro aplikaci Zkratky a Siri. Běží na pozadí, aplikaci neotevírají.
+// Actions for the Shortcuts app and Siri. They run in the background and don't open the app.
 
 public struct SetTVVolumeIntent: AppIntent {
     public init() {}
 
-    public static let title: LocalizedStringResource = "Nastavit hlasitost televize"
-    public static let description = IntentDescription("Nastaví hlasitost televize na konkrétní číslo od 0 do 100.")
+    public static let title: LocalizedStringResource = "Set TV Volume"
+    public static let description = IntentDescription("Sets the TV volume to a specific number from 0 to 100.")
 
-    @Parameter(title: "Hlasitost", inclusiveRange: (0, 100))
+    @Parameter(title: "Volume", inclusiveRange: (0, 100))
     var level: Int
 
     public static var parameterSummary: some ParameterSummary {
-        Summary("Nastavit hlasitost televize na \(\.$level)")
+        Summary("Set TV volume to \(\.$level)")
     }
 
     public func perform() async throws -> some IntentResult & ProvidesDialog {
         try await reachingTV { try await SamsungTVClient.shared.setVolume(level) }
-        return .result(dialog: "Hlasitost televize je \(level).")
+        return .result(dialog: "The TV volume is \(level).")
     }
 }
 
 public enum TVVolumeDirection: String, AppEnum {
     case up, down
 
-    public static let typeDisplayRepresentation: TypeDisplayRepresentation = "Směr"
+    public static let typeDisplayRepresentation: TypeDisplayRepresentation = "Direction"
     public static let caseDisplayRepresentations: [TVVolumeDirection: DisplayRepresentation] = [
-        .up: "Zesílit",
-        .down: "Zeslabit",
+        .up: "Turn Up",
+        .down: "Turn Down",
     ]
 }
 
 public struct AdjustTVVolumeIntent: AppIntent {
     public init() {}
 
-    public static let title: LocalizedStringResource = "Zesílit nebo zeslabit televizi"
-    public static let description = IntentDescription("Změní hlasitost televize o zadaný počet stupňů.")
+    public static let title: LocalizedStringResource = "Turn TV Volume Up or Down"
+    public static let description = IntentDescription("Changes the TV volume by the given number of steps.")
 
-    @Parameter(title: "Směr", default: .up)
+    @Parameter(title: "Direction", default: .up)
     var direction: TVVolumeDirection
 
-    @Parameter(title: "O kolik", default: 5, inclusiveRange: (1, 50))
+    @Parameter(title: "Steps", default: 5, inclusiveRange: (1, 50))
     var amount: Int
 
     public static var parameterSummary: some ParameterSummary {
-        Summary("\(\.$direction) televizi o \(\.$amount)")
+        Summary("\(\.$direction) the TV by \(\.$amount)")
     }
 
     public func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -54,32 +54,32 @@ public struct AdjustTVVolumeIntent: AppIntent {
             try await SamsungTVClient.shared.setVolume(target)
             return min(max(target, TVVolume.range.lowerBound), TVVolume.range.upperBound)
         }
-        return .result(dialog: "Hlasitost televize je \(level).")
+        return .result(dialog: "The TV volume is \(level).")
     }
 }
 
 public enum TVMuteAction: String, AppEnum {
     case mute, unmute, toggle
 
-    public static let typeDisplayRepresentation: TypeDisplayRepresentation = "Zvuk"
+    public static let typeDisplayRepresentation: TypeDisplayRepresentation = "Sound"
     public static let caseDisplayRepresentations: [TVMuteAction: DisplayRepresentation] = [
-        .mute: "Ztlumit",
-        .unmute: "Zapnout zvuk",
-        .toggle: "Přepnout",
+        .mute: "Mute",
+        .unmute: "Unmute",
+        .toggle: "Toggle",
     ]
 }
 
 public struct MuteTVIntent: AppIntent {
     public init() {}
 
-    public static let title: LocalizedStringResource = "Ztlumit televizi"
-    public static let description = IntentDescription("Ztlumí televizi, zapne zvuk, nebo ztlumení přepne.")
+    public static let title: LocalizedStringResource = "Mute TV"
+    public static let description = IntentDescription("Mutes the TV, unmutes it, or toggles mute.")
 
-    @Parameter(title: "Akce", default: .toggle)
+    @Parameter(title: "Action", default: .toggle)
     var action: TVMuteAction
 
     public static var parameterSummary: some ParameterSummary {
-        Summary("\(\.$action) zvuk televize")
+        Summary("\(\.$action) the TV sound")
     }
 
     public func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -93,15 +93,15 @@ public struct MuteTVIntent: AppIntent {
             try await SamsungTVClient.shared.setMuted(target)
             return target
         }
-        return .result(dialog: muted ? "Televize je ztlumená." : "Zvuk televize je zapnutý.")
+        return .result(dialog: muted ? "The TV is muted." : "The TV sound is on.")
     }
 }
 
 public struct TurnOffTVIntent: AppIntent {
     public init() {}
 
-    public static let title: LocalizedStringResource = "Vypnout televizi"
-    public static let description = IntentDescription("Vypne televizi.")
+    public static let title: LocalizedStringResource = "Turn Off TV"
+    public static let description = IntentDescription("Turns the TV off.")
 
     @MainActor
     public func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -109,52 +109,52 @@ public struct TurnOffTVIntent: AppIntent {
         do {
             try await client.waitUntilConnected()
         } catch {
-            // Nedostupná televize je skoro vždycky prostě vypnutá.
-            return .result(dialog: "Televize už je vypnutá.")
+            // An unreachable TV is almost always simply off.
+            return .result(dialog: "The TV is already off.")
         }
         try await client.sendWhenConnected(.power)
-        return .result(dialog: "Vypínám televizi.")
+        return .result(dialog: "Turning off the TV.")
     }
 }
 
 public struct TurnOnTVIntent: AppIntent {
     public init() {}
 
-    public static let title: LocalizedStringResource = "Zapnout televizi"
-    public static let description = IntentDescription("Zapne televizi přes Wake-on-LAN. Na televizi musí být zapnuté „Zapnutí přes mobil“.")
+    public static let title: LocalizedStringResource = "Turn On TV"
+    public static let description = IntentDescription("Turns the TV on via Wake-on-LAN. \"Power On with Mobile\" must be enabled on the TV.")
 
     public func perform() async throws -> some IntentResult & ProvidesDialog {
-        // Paket několikrát zopakujeme, televize ho v hlubokém spánku občas přeslechne.
+        // Repeat the packet a few times; in deep sleep the TV sometimes misses it.
         for attempt in 0..<4 {
             if attempt > 0 { try await Task.sleep(for: .seconds(1)) }
             try WakeOnLAN.wake(mac: TVConfig.mac, ip: TVConfig.host)
         }
-        return .result(dialog: "Zapínám televizi.")
+        return .result(dialog: "Turning on the TV.")
     }
 }
 
 public struct OpenTVAppIntent: AppIntent {
     public init() {}
 
-    public static let title: LocalizedStringResource = "Spustit aplikaci na televizi"
-    public static let description = IntentDescription("Spustí na televizi vybranou aplikaci, třeba Netflix nebo YouTube.")
+    public static let title: LocalizedStringResource = "Open App on TV"
+    public static let description = IntentDescription("Opens the chosen app on the TV, such as Netflix or YouTube.")
 
-    @Parameter(title: "Aplikace")
+    @Parameter(title: "App")
     public var app: TVAppEntity
 
     public static var parameterSummary: some ParameterSummary {
-        Summary("Spustit \(\.$app) na televizi")
+        Summary("Open \(\.$app) on the TV")
     }
 
     public func perform() async throws -> some IntentResult & ProvidesDialog {
         try await reachingTV {
             try await SamsungTVClient.shared.launchWhenConnected(TVApp(id: app.id, name: app.name, type: app.type))
         }
-        return .result(dialog: "Spouštím \(app.name).")
+        return .result(dialog: "Opening \(app.name).")
     }
 }
 
-/// Jakoukoli síťovou chybu převede na srozumitelné hlášení pro Siri.
+/// Turns any network error into a clear message for Siri.
 private func reachingTV<T>(_ work: () async throws -> T) async throws -> T {
     do {
         return try await work()
@@ -163,10 +163,10 @@ private func reachingTV<T>(_ work: () async throws -> T) async throws -> T {
     }
 }
 
-// MARK: - Aplikace jako parametr
+// MARK: - App as a parameter
 
 public struct TVAppEntity: AppEntity {
-    public static let typeDisplayRepresentation: TypeDisplayRepresentation = "Aplikace na televizi"
+    public static let typeDisplayRepresentation: TypeDisplayRepresentation = "TV App"
     public static let defaultQuery = TVAppQuery()
 
     public let id: String
@@ -184,7 +184,7 @@ public struct TVAppEntity: AppEntity {
     }
 }
 
-/// Aplikace bere z posledního seznamu načteného z televize; připnuté nabízí jako první.
+/// Takes apps from the last list loaded from the TV; pinned ones are offered first.
 public struct TVAppQuery: EntityStringQuery {
     public init() {}
 

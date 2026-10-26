@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Seznam aplikací na televizi. Klepnutí aplikaci spustí, hvězdička ji připne na ovladač.
+/// List of apps on the TV. A tap opens the app, the star pins it to the remote.
 struct AppsSheet: View {
     @Environment(SamsungTVClient.self) private var tv
     @Environment(\.dismiss) private var dismiss
@@ -21,28 +21,28 @@ struct AppsSheet: View {
                         ForEach(tv.favoriteApps) { row(for: $0) }
                             .onMove { tv.favoriteApps.move(fromOffsets: $0, toOffset: $1) }
                     } header: {
-                        Text("Na ovladači")
+                        Text("On the Remote")
                     } footer: {
-                        Text("Pořadí změníš podržením a přetažením.")
+                        Text("Touch and hold, then drag to reorder.")
                     }
                 }
 
-                Section("Všechny aplikace") {
+                Section("All Apps") {
                     if tv.installedApps.isEmpty {
                         HStack {
                             ProgressView()
-                            Text("Načítám aplikace z televize…").foregroundStyle(.secondary)
+                            Text("Loading apps from the TV…").foregroundStyle(.secondary)
                         }
                     }
                     ForEach(filteredApps) { row(for: $0) }
                 }
             }
-            .searchable(text: $query, prompt: "Hledat aplikaci")
-            .navigationTitle("Aplikace")
+            .searchable(text: $query, prompt: "Search Apps")
+            .navigationTitle("Apps")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Hotovo") { dismiss() }
+                    Button("Done") { dismiss() }
                 }
             }
         }
@@ -74,12 +74,12 @@ struct AppsSheet: View {
                     .frame(width: 32, height: 32)
             }
             .buttonStyle(.borderless)
-            .accessibilityLabel(tv.isFavorite(app) ? "Odepnout z ovladače" : "Připnout na ovladač")
+            .accessibilityLabel(tv.isFavorite(app) ? "Unpin from Remote" : "Pin to Remote")
         }
     }
 }
 
-/// Barevná dlaždice s prvním písmenem aplikace (ikony televize přes síť nedává).
+/// Coloured tile with the app's first letter (the TV doesn't provide icons over the network).
 struct AppTile: View {
     let app: TVApp
     var size: CGFloat = 44

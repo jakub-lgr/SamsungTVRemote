@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Nastavení hlasitosti na konkrétní číslo: posuvníkem nebo zadáním hodnoty.
+/// Setting the volume to a specific number: with a slider or by entering a value.
 struct VolumeSheet: View {
     @Environment(SamsungTVClient.self) private var tv
 
@@ -17,7 +17,7 @@ struct VolumeSheet: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Hlasitost")
+            Text("Volume")
                 .font(.headline)
                 .foregroundStyle(.secondary)
 
@@ -56,7 +56,7 @@ struct VolumeSheet: View {
                         inputFocused = false
                     }
                 } label: {
-                    Text("Nastavit")
+                    Text("Set")
                         .font(.headline)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
@@ -72,7 +72,7 @@ struct VolumeSheet: View {
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
             } else if !input.isEmpty && inputValue == nil {
-                Text("Zadej číslo od 0 do 100.")
+                Text("Enter a number from 0 to 100.")
                     .font(.footnote)
                     .foregroundStyle(.red)
             }
@@ -98,7 +98,7 @@ struct VolumeSheet: View {
             do {
                 try await tv.setVolume(value)
             } catch {
-                errorMessage = "Hlasitost se nepodařilo nastavit. Je televize zapnutá?"
+                errorMessage = "Couldn't set the volume. Is the TV on?"
                 tv.refreshVolume()
             }
         }

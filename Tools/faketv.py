@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Falešná televize Samsung pro testování aplikace bez skutečné TV.
+"""Fake Samsung TV for testing the app without a real TV.
 
-Napodobuje WebSocket API Tizenu na portu 8002 (TLS, párování tokenem):
-- po připojení pošle `ms.channel.connect` a vrátí token, který dostala (nebo vlastní),
-- každou přijatou zprávu vypíše (klávesy, spouštění aplikací, text),
-- po klávese Domů (KEY_HOME) pošle `ms.remote.imeStart`, jako by se na TV otevřela klávesnice.
+Imitates the Tizen WebSocket API on port 8002 (TLS, token pairing):
+- on connect it sends `ms.channel.connect` and returns the token it got (or its own),
+- prints every received message (keys, app launches, text),
+- after the Home key (KEY_HOME) it sends `ms.remote.imeStart`, as if a keyboard opened on the TV.
 
-Použití:
+Usage:
     python3 Tools/faketv.py
     xcrun simctl launch booted cz.jakublanger.SamsungTVRemote -tv.testHost 127.0.0.1
 
-U aplikace, která balíček vkládá, použij její bundle ID.
+For an app that embeds the package, use its bundle ID.
 
-Spouštěcí argument `-tv.testHost` přesměruje aplikaci jen pro toto spuštění, uložené nastavení
-zůstane beze změny (v aplikaci ale musí být uložená aspoň jedna televize). Hlasitost (UPnP, port 9197) falešná TV neumí.
+The launch argument `-tv.testHost` redirects the app for that launch only; the stored settings
+stay unchanged (but at least one TV must be saved in the app). The fake TV doesn't do volume (UPnP, port 9197).
 """
 
 import base64
@@ -33,7 +33,7 @@ DEFAULT_TOKEN = "11223344"
 
 
 def self_signed_certificate() -> tuple[Path, Path]:
-    """Televize používá vlastní certifikát, tak si ho vyrobíme taky."""
+    """The TV uses its own certificate, so we make one too."""
     folder = Path(tempfile.mkdtemp(prefix="faketv-"))
     cert, key = folder / "cert.pem", folder / "key.pem"
     subprocess.run(
@@ -94,7 +94,7 @@ def handle(conn):
                 if "KEY_HOME" in text:
                     send_text(conn, {"event": "ms.remote.imeStart", "data": ""})
     except (ConnectionError, ssl.SSLError):
-        pass  # aplikace spojení ukončila bez rozloučení (třeba při přechodu na pozadí)
+        pass  # the app closed the connection without saying goodbye (e.g. when going to the background)
     print("CLOSE", flush=True)
 
 
@@ -107,13 +107,13 @@ def main():
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind(("127.0.0.1", PORT))
     server.listen()
-    print(f"Falešná TV poslouchá na wss://127.0.0.1:{PORT}", flush=True)
+    print(f"Fake TV listening on wss://127.0.0.1:{PORT}", flush=True)
     while True:
         client, _ = server.accept()
         try:
             threading.Thread(target=handle, args=(context.wrap_socket(client, server_side=True),), daemon=True).start()
         except ssl.SSLError as error:
-            print("TLS chyba:", error, flush=True)
+            print("TLS error:", error, flush=True)
 
 
 if __name__ == "__main__":

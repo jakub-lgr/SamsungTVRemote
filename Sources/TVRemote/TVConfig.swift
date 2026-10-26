@@ -1,8 +1,8 @@
 import Foundation
 
-/// Uložená televize. Každá má vlastní adresu, token a oblíbené aplikace.
+/// A saved TV. Each has its own address, token and favourite apps.
 nonisolated struct SavedTV: Codable, Hashable, Identifiable, Sendable {
-    /// ID zařízení z hledání v síti (`uuid:…`), u ručně přidaných náhodné UUID.
+    /// Device ID from network discovery (`uuid:…`), a random UUID for manually added ones.
     var id: String
     var name: String
     var host: String
@@ -12,19 +12,19 @@ nonisolated struct SavedTV: Codable, Hashable, Identifiable, Sendable {
     var knownApps: [TVApp] = []
 }
 
-/// Nastavení uložené v UserDefaults.
+/// Settings stored in UserDefaults.
 ///
-/// `host`, `mac`, `token`, `favoriteApps` a `knownApps` patří vždy **aktuálně vybrané** televizi,
-/// takže s nimi zbytek aplikace (i Zkratky) pracuje stejně, ať je televizí kolik chce.
+/// `host`, `mac`, `token`, `favoriteApps` and `knownApps` always belong to the **currently selected** TV,
+/// so the rest of the app (and Shortcuts) works with them the same way however many TVs there are.
 nonisolated enum TVConfig {
     static let savedTVsKey = "tv.saved"
     static let currentTVKey = "tv.current"
     static let hardwareVolumeKey = "tv.hardwareVolume"
-    /// Spouštěcí argument `-tv.testHost <ip>` dočasně přesměruje aplikaci jinam, třeba na `Tools/faketv.py`.
-    /// Do uloženého nastavení se nezapisuje.
+    /// The launch argument `-tv.testHost <ip>` temporarily points the app elsewhere, e.g. at `Tools/faketv.py`.
+    /// It's never written to the stored settings.
     static let testHostKey = "tv.testHost"
 
-    // MARK: - Seznam televizí
+    // MARK: - TV list
 
     static var savedTVs: [SavedTV] {
         get {
@@ -44,7 +44,7 @@ nonisolated enum TVConfig {
         return tvs.first { $0.id == currentTVID } ?? tvs.first
     }
 
-    /// Upraví aktuální televizi a uloží změnu.
+    /// Modifies the current TV and saves the change.
     private static func updateCurrent(_ change: (inout SavedTV) -> Void) {
         var tvs = savedTVs
         guard let id = currentTV?.id, let index = tvs.firstIndex(where: { $0.id == id }) else { return }
@@ -52,38 +52,38 @@ nonisolated enum TVConfig {
         savedTVs = tvs
     }
 
-    // MARK: - Aktuální televize
+    // MARK: - Current TV
 
     static var host: String { UserDefaults.standard.string(forKey: testHostKey) ?? currentTV?.host ?? "" }
     static var mac: String { currentTV?.mac ?? "" }
 
-    /// Token, který televize vydá po potvrzení připojení. Bez něj se ptá znovu.
+    /// Token the TV issues once the connection is allowed. Without it, the TV asks again.
     static var token: String? {
         get { currentTV?.token }
         set { updateCurrent { $0.token = newValue } }
     }
 
-    /// Aplikace připnuté na ovladači, v pořadí, v jakém se zobrazují.
+    /// Apps pinned on the remote, in display order.
     static var favoriteApps: [TVApp] {
         get { currentTV?.favoriteApps ?? [] }
         set { updateCurrent { $0.favoriteApps = newValue } }
     }
 
-    /// Poslední načtený seznam aplikací z televize, aby ho měly i Zkratky bez připojení.
+    /// Last app list loaded from the TV, so Shortcuts have it even without a connection.
     static var knownApps: [TVApp] {
         get { currentTV?.knownApps ?? [] }
         set { updateCurrent { $0.knownApps = newValue } }
     }
 
-    /// Ovládání hlasitosti televize bočními tlačítky iPhonu. Ve výchozím stavu zapnuté.
+    /// Controlling the TV volume with the iPhone's side buttons. On by default.
     static var hardwareVolumeEnabled: Bool {
         UserDefaults.standard.object(forKey: hardwareVolumeKey) as? Bool ?? true
     }
 
-    // MARK: - Převod ze staršího nastavení
+    // MARK: - Migrating older settings
 
-    /// Dřívější verze si pamatovala jen jednu televizi v samostatných klíčích.
-    /// Převedeme ji do seznamu i s tokenem, aby se nemusela párovat znovu.
+    /// Earlier versions remembered just one TV in separate keys.
+    /// Move it into the list together with its token so it doesn't need pairing again.
     private static func migrateSingleTV() -> [SavedTV] {
         let defaults = UserDefaults.standard
         let legacyKeys = ["tv.host", "tv.mac", "tv.name", "tv.token", "tv.favoriteApps", "tv.knownApps"]
@@ -108,7 +108,7 @@ nonisolated enum TVConfig {
         return [tv]
     }
 
-    // MARK: - Kontroly
+    // MARK: - Validation
 
     static func isValidIPv4(_ value: String) -> Bool {
         let parts = value.split(separator: ".", omittingEmptySubsequences: false)

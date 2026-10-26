@@ -10,7 +10,7 @@ let package = Package(
     targets: [
         .target(
             name: "TVRemote",
-            // Stejné nastavení jako v aplikaci: výchozí izolace MainActor a „Approachable Concurrency“.
+            // Same settings as the app: MainActor default isolation and "Approachable Concurrency".
             swiftSettings: [
                 .defaultIsolation(MainActor.self),
                 .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
