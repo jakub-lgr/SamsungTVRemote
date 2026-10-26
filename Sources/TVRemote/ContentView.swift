@@ -23,7 +23,7 @@ struct ContentView: View {
                 }
                 Spacer(minLength: 12)
                 // Na menších iPhonech se ovladač zmenší, aby se vešlo všechno ostatní.
-                DirectionPad(size: min(260, max(190, proxy.size.height - 480))) { tv.send($0) }
+                DirectionPad(size: min(260, max(190, proxy.size.height - 522))) { tv.send($0) }
                 Spacer(minLength: 12)
                 HStack(spacing: 28) {
                     RemoteKey(systemImage: "arrow.uturn.backward", title: "Zpět") { tv.send(.back) }
@@ -47,6 +47,8 @@ struct ContentView: View {
                 }
                 .padding(.horizontal, 12)
                 Spacer(minLength: 12)
+                ColorKeys { tv.send($0) }
+                    .padding(.bottom, 12)
                 bottomBar
             }
             .padding(.horizontal, 24)

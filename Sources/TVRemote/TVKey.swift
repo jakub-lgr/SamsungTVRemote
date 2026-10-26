@@ -15,6 +15,11 @@ enum TVKey: String {
     case home = "KEY_HOME"
     case source = "KEY_SOURCE"
     case previousChannel = "KEY_PRECH"
+    case red = "KEY_RED"
+    case green = "KEY_GREEN"
+    case yellow = "KEY_YELLOW"
+    /// Modré tlačítko Samsung pojmenoval podle odstínu na svých ovladačích.
+    case blue = "KEY_CYAN"
     case digit0 = "KEY_0"
     case digit1 = "KEY_1"
     case digit2 = "KEY_2"

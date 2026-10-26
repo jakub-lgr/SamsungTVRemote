@@ -118,6 +118,35 @@ struct PowerKey: View {
     }
 }
 
+/// Barevná tlačítka pro teletext, HbbTV a nabídky aplikací. Pořadí odpovídá ovladači Samsung.
+struct ColorKeys: View {
+    let onPress: (TVKey) -> Void
+
+    private let keys: [(key: TVKey, color: Color, label: String)] = [
+        (.red, .red, "Červené tlačítko"),
+        (.green, .green, "Zelené tlačítko"),
+        (.yellow, .yellow, "Žluté tlačítko"),
+        (.blue, .blue, "Modré tlačítko"),
+    ]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ForEach(keys, id: \.key) { item in
+                Button {
+                    tap { onPress(item.key) }
+                } label: {
+                    Color.clear
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 30)
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(RemoteKeyStyle(shape: Capsule(), fill: item.color.opacity(0.85)))
+                .accessibilityLabel(item.label)
+            }
+        }
+    }
+}
+
 /// Svislý dvojtlačítkový ovladač pro hlasitost a kanály. `onPress(true)` je nahoru.
 struct Rocker: View {
     let title: String
